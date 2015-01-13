@@ -8,6 +8,12 @@ def dict_to_param(dict):
 def current_tick():
     return int(time.time() * 1000)
 
+def is_tick(val):
+    if type(val) is int:
+        return True
+    else:
+        return False
+
 # str_time: "2010-06-04 21:08:12"
 def gen_tick(str_time, precision=1):
     return int(time.mktime(time.strptime(str_time, "%Y-%m-%d %H:%M:%S")) * precision)
@@ -77,12 +83,14 @@ class XueqiuAPI(object):
         if end is None:
             end = current_tick()
         else:
-            end = gen_tick(end, precision=1000)
+            if not is_tick(end):
+                end = gen_tick(end, precision=1000)
 
         if begin is None:
             begin = end - 365 * 24 * 3600 * 1000 # 1 year ago till now
         else:
-            begin = gen_tick(begin, precision=1000)
+            if not is_tick(begin):
+                begin = gen_tick(begin, precision=1000)
         params = {
             'symbol': symbol,
             'period': '1day',
