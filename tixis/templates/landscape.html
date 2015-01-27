@@ -1,0 +1,55 @@
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>OpenTrader Tixis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Li Qian">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/static/css/bootstrap-theme.min.css" />
+    <script src="/static/js/jquery-2.1.3.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+  </head>
+<body>
+<div id="switch" data-type="daily" style="background:white;color:white;padding:14px;z-index:9999;position:fixed;background:#345;right:0px;top:0px;">
+    日
+</div>
+<div id="kgraphs">
+{% for symbol in symbols %}
+{% if loop.index0 < 10000 %}
+<a class="dk" id="d_{{ symbol|lower }}" data-symbol="{{ symbol|lower }}" target="_blank"><img src="http://image.sinajs.cn/newchart/daily/n/{{ symbol|lower }}.gif" width="300" /></a>
+<a class="wk" id="w_{{ symbol|lower }}" style="display:none;" data-symbol="{{ symbol|lower }}" target="_blank"><img src="http://image.sinajs.cn/newchart/weekly/n/{{ symbol|lower }}.gif" width="300" /></a>
+<a class="link" target="_blank" href="http://xueqiu.com/S/{{ symbol }}">雪</a>
+{% endif %}
+{% endfor %}
+</div>
+<script type="text/javascript">
+$(function(){
+        $("#kgraphs").find(".dk").click(function(){
+            $(this).hide();
+            $(this).next().show();
+            return false;
+        });
+        $("#kgraphs").find(".wk").click(function(){
+            $(this).hide();
+            $(this).prev().show();
+            return false;
+        });
+        $("#switch").click(function(){
+            if($(this).data("type") == "daily") {
+                $(this).html("周");
+                $(this).data("type", "weekly");
+                $("#kgraphs").find(".dk").hide();
+                $("#kgraphs").find(".wk").show();
+            } else {
+                $(this).html("日");
+                $(this).data("type", "daily");
+                $("#kgraphs").find(".wk").hide();
+                $("#kgraphs").find(".dk").show();
+            }
+        });
+});
+
+</script>
+</body>
+</html>

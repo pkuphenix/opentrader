@@ -9,7 +9,7 @@ def current_tick():
     return int(time.time() * 1000)
 
 def is_tick(val):
-    if type(val) is int:
+    if type(val) in (int, long):
         return True
     else:
         return False

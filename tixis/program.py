@@ -54,7 +54,7 @@ def program_detail(oid):
 
 @app.route("/programs/")
 def program_list():
-    progs = 
+    progs = []
 
     return render_template('program_list.html', progs=progs)
 
