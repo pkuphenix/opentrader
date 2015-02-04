@@ -49,7 +49,7 @@ class XueqiuSyncer(object):
         self.db.xueqiu_info.insert(to_insert)
 
     def get_normal_symbols(self):
-        return [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}}) if not info['symbol'].startswith("SH000")]
+        return [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}}) if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE"))]
 
     # sync price curve of one day (today) to database
     # {"symbol":"SH000001", "prices":[{"volume":227700.0,"current":33.35,"time":"Fri Jan 09 09:30:00 +0800 2015"},...]}
@@ -81,7 +81,8 @@ class XueqiuSyncer(object):
         print 'Start syncing xueqiu k day...'
         total_updated = 0
         if symbols is None:
-            symbols = [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}})]
+            symbols = self.get_normal_symbols()
+            #symbols = [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}})]
 
         latest_time = None
         for (i, sym) in enumerate(symbols):
@@ -158,7 +159,7 @@ def main():
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2015-01-08 00:00:00', end='2015-01-12 16:16:16')
+        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2013-01-01 00:00:00', end='2015-02-03 16:16:16')
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()
