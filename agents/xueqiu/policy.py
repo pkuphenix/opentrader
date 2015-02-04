@@ -120,4 +120,4 @@ def over_night_today():
 
 
 #print check_matching_stocks('2015-01-12 00:00:00', '2015-01-09 00:00:00')
-print over_night_today()
+#print over_night_today()

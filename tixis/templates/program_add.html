@@ -6,6 +6,10 @@
         <h3 class="panel-title">添加方案</h3>
     </div>
     <div class="panel-body">
+        <div class="alert alert-danger {{ error_show }}" role="alert">
+          <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+          {{ error_msg }}
+        </div>
         <form method="POST" action="/program/add">
           <div class="form-group">
             <label for="program_name">名称 *</label>

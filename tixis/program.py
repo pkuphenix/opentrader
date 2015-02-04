@@ -36,7 +36,7 @@ class Program(object):
 @app.route("/program/add", methods=['POST','GET'])
 def program_add():
     if request.method == 'GET':
-        return render_template('program_add.html')
+        return render_template('program_add.html', error_show='hidden')
     elif request.method == 'POST':
         new_program = {
             'name': request.form['program_name'],
