@@ -5,7 +5,6 @@ from optparse import OptionParser
 from api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-sys.path.append('/home/qianli/pro/py-google-prediction-api')
 from prediction import *
 
 def compute_delta_percent(dst, src, round_num=3):
@@ -88,6 +87,6 @@ class I419(object):
 
 i419 = I419()
 #i419.generate_training(each_stock_limit=10, stock_limit=3000)
-i419.evaluate("SZ000333", "2015-01-09 00:00:00")
+i419.evaluate("SZ300096", "2014-06-12 00:00:00")
             
 

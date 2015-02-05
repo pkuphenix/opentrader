@@ -159,7 +159,7 @@ def main():
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2013-01-01 00:00:00', end='2015-02-03 16:16:16')
+        syncer.sync_xueqiu_k_day(symbols=["SZ300096"], begin='2013-01-01 00:00:00', end='2015-02-03 16:16:16')
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()
