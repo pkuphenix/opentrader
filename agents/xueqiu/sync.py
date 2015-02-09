@@ -13,7 +13,10 @@ def convert_str_to_number(doc, int_keys=[], float_keys=[]):
             if doc[key].strip() == '':
                 doc[key] = 0
                 continue
-            doc[key] = int(doc[key])
+            try:
+                doc[key] = int(doc[key])
+            except ValueError:
+                doc[key] = int(float(doc[key]))
         for key in float_keys:
             if doc[key].strip() == '':
                 doc[key] = 0
@@ -49,7 +52,7 @@ class XueqiuSyncer(object):
         self.db.xueqiu_info.insert(to_insert)
 
     def get_normal_symbols(self):
-        return [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}}) if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE"))]
+        return [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}}) if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE") or info['symbol'].startswith("SZ399"))]
 
     # sync price curve of one day (today) to database
     # {"symbol":"SH000001", "prices":[{"volume":227700.0,"current":33.35,"time":"Fri Jan 09 09:30:00 +0800 2015"},...]}
@@ -108,24 +111,51 @@ class XueqiuSyncer(object):
                     updated += 1
             print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(latest_time))
         return total_updated
-
+    """
+    {"symbol":"SZ300059","exchange":"SZ","code":"300059","name":"东方财富","current":"41.25","percentage":"-5.56","change":"-2.430","open":"43.0","high":"44.0","low":"40.28","close":"0.0",
+     "last_close":"43.68","high52week":"47.47","low52week":"8.99","volume":"4.2804822E7","volumeAverage":"46784325","marketCapital":"4.9896E10","eps":"0.05","pe_ttm":"550.7216","pe_lyr":"9983.7302",
+     "beta":"0.0","totalShares":"1209600000","time":"Fri Feb 06 15:09:55 +0800 2015","afterHours":"0.0","afterHoursPct":"0.0","afterHoursChg":"0.0","afterHoursTime":"null","updateAt":"1423224015400",
+     "dividend":"0.02","yield":"0.05","turnover_rate":"4.67","instOwn":"0.0","rise_stop":"48.05","fall_stop":"39.31","currency_unit":"CNY","amount":"1.77892612509E9","net_assets":"1.4374","hasexist":"false",
+     "type":"11","flag":"1","rest_day":"","kzz_stock_symbol":"","kzz_stock_name":"","kzz_stock_current":"0.0","kzz_convert_price":"0.0","kzz_covert_value":"0.0","kzz_cpr":"0.0","kzz_putback_price":"0.0",
+     "kzz_convert_time":"","kzz_redempt_price":"0.0","kzz_straight_price":"0.0","kzz_stock_percent":"","pb":"28.7","benefit_before_tax":"0.0","benefit_after_tax":"0.0","convert_bond_ratio":"",
+     "totalissuescale":"","outstandingamt":"","maturitydate":"","remain_year":"","convertrate":"","interestrtmemo":"","release_date":"","circulation":"0.0","par_value":"0.0","due_time":"0.0",
+     "value_date":"","due_date":"","publisher":"","redeem_type":"","issue_type":"","bond_type":"","warrant":"","sale_rrg":"","rate":"","after_hour_vol":"0","float_shares":"916024192",
+     "float_market_capital":"3.778599792E10","disnext_pay_date":"","convert_rate":"","psr":"113.8297"}
+    """
     def sync_xueqiu_instant(self, symbols=None):
         print 'Start syncing xueqiu instant...'
         updated = 0
         today = datetime.today()
         today = datetime(today.year, today.month, today.day)
         if symbols is None:
-            symbols = [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}})]
+            symbols = self.get_normal_symbols()
+            #symbols = [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}})]
 
+        tmp_sym_list = []
+        total_len = len(symbols)
         for (i, sym) in enumerate(symbols):
-            stock = self.db.xueqiu_instant.remove({'symbol':sym, 'date':today})
-            instant_data = self.api.stock_instant([sym])
-            if not instant_data:
-                print 'stock %d: %s... already have it for today %s' % (i, sym, str(today))
-                continue
-            self.db.xueqiu_instant.insert(instant_data[0])
-            updated += 1
-            print 'stock %d: %s... inserted for today %s' % (i, sym, str(today))
+            if len(tmp_sym_list) == 100 or i == total_len-1:
+                self.db.xueqiu_instant.remove({'symbol':{'$in':tmp_sym_list}, 'date':today})
+                instant_data = self.api.stock_instant(tmp_sym_list)
+                if not instant_data:
+                    print 'stock %d: %s... fail to query from xueqiu instant for today %s' % (i, tmp_sym_list, str(today))
+                    continue
+                for each in instant_data:
+                    each['time'] = time_parse(each['time'])
+                    each['date'] = today
+                    convert_str_to_number(each, 
+                    ["volume","volumeAverage","marketCapital","totalShares","amount",
+                     "type","after_hour_vol","float_shares","float_market_capital",], 
+                    ["beta","afterHours","afterHoursPct","afterHoursChg","dividend","yield","turnover_rate","instOwn","rise_stop","fall_stop","net_assets",
+                     "kzz_stock_current","kzz_convert_price","kzz_covert_value","kzz_cpr","kzz_putback_price","kzz_redempt_price","kzz_straight_price",
+                     "kzz_stock_percent","pb","benefit_before_tax","benefit_after_tax","convert_bond_ratio","circulation","par_value","due_time","psr",
+                     "current","percentage","change","open","high","low","close","last_close","high52week","low52week","eps","pe_ttm","pe_lyr",])
+                self.db.xueqiu_instant.insert(instant_data)
+                updated += len(tmp_sym_list)
+                print '%d stocks: %s... inserted for today %s' % (len(tmp_sym_list), tmp_sym_list[0], str(today))
+                tmp_sym_list = []
+            else:
+                tmp_sym_list.append(sym)
         return updated
 
 def main():
@@ -159,17 +189,15 @@ def main():
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(symbols=["SZ300096"], begin='2013-01-01 00:00:00', end='2015-02-03 16:16:16')
+        syncer.sync_xueqiu_k_day(begin='2013-01-01 00:00:00', end='2015-02-05 16:16:16')
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_price(symbols=stocks)
-        #syncer.sync_xueqiu_instant(symbols=stocks)
+        syncer.sync_xueqiu_instant(symbols=stocks)
         end = current_tick()
         begin = end - 1000 * 24 * 3600 # one day ago
-        print end
-        print begin
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
+        #syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
     else:
         pass
 

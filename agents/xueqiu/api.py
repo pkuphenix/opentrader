@@ -128,3 +128,9 @@ def test_stock_list():
     resp = xueqiu.stock_instant(['SH000001'])
     assert resp[0]['symbol'] == 'SH000001'
 
+    resp = xueqiu.stock_instant(['SH000001'] * 100)
+    assert len(resp) == 100
+
+if __name__ == "__main__":
+    test_stock_list()
+

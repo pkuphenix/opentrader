@@ -1,2 +1,3 @@
 from pymongo import MongoClient
-db = MongoClient().opentrader_tixis
+db_ot = MongoClient().opentrader
+db_tixis = MongoClient().opentrader_tixis

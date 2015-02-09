@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+{% block landscape_active %}active{% endblock %}
+{#
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8">
@@ -11,15 +14,65 @@
     <script src="/static/js/bootstrap.min.js"></script>
   </head>
 <body>
-<div id="switch" data-type="daily" style="background:white;color:white;padding:14px;z-index:9999;position:fixed;background:#345;right:0px;top:0px;">
-    日
-</div>
+#}
+
+{% block main_content %}
+<div class="container-fluid" style="margin-bottom:10px;"><div class="row"><div class="col-md-12">
+    <input type="checkbox" id="display-switch" style="display:none;" name="display-switch" {% if display=="list" %}checked{% endif %} />
+    {% if display=="graph" %}
+    <input type="checkbox" id="dayweek-switch" style="display:none;" name="dayweek-switch" checked />
+    {% endif %}
+    <i class="fa fa-info-circle text-info" id="help-info"></i>
+    <form class="form" id="script-form" style="margin-top:10px;">
+        <div class="form-group">
+            <input type="text" class="form-control" id="script-box" style="width:100%;" placeholder="过滤器脚本，例子：filter(&quot;:instant::high52week&quot;, &quot;$gt&quot;, 100).orderby(&quot;:info::current&quot;, &quot;reverse&quot;)" value="{{ script }}" />
+        </div>
+    </form>
+    </div>
+</div></div>
+{% if display == "list" %}
+<table class="table table-hover">
+    <tr>
+        <th></th>
+        <th>代码</th>
+        <th>名称</th>
+        <th>当前价</th>
+        <th>涨跌幅</th>
+        <th>涨跌额</th>
+        <th>当日股价幅度</th>
+        <th>52周股价幅度</th>
+        <th>市值</th>
+        <th>市盈率(LYR/TTM)</th>
+        <th>成交量</th>
+        <th>成交额</th>
+        <th>操作</th>
+    </tr>
+    {% for stock in stocks %}
+    <tr>
+        <th>{{ loop.index }}</th>
+        <td>{{ stock.symbol }}</td>
+        <td>{{ stock.name }}</td>
+        <td>{{ stock.instant('current', noexception=True) }}</td>
+        <td>{{ stock.instant('percentage', noexception=True) }}</td>
+        <td>{{ stock.instant('change', noexception=True) }}</td>
+        <td>{{ stock.instant('low', noexception=True) }} - {{ stock.instant('high', noexception=True) }}</td>
+        <td>{{ stock.instant('low52week', noexception=True) }} - {{ stock.instant('high52week', noexception=True) }}</td>
+        <td>{{ stock.instant('marketCapital', noexception=True) }}</td>
+        <td>{{ stock.instant('pe_lyr', noexception=True) }}/{{ stock.instant('pe_ttm', noexception=True) }}</td>
+        <td>{{ stock.instant('volume', noexception=True) }}</td>
+        <td>{{ stock.instant('amount', noexception=True) }}</td>
+        <td><a class="link" target="_blank" href="http://xueqiu.com/S/{{ stock.symbol }}">雪</a></td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% if display == "graph" %}
 <div id="kgraphs">
-{% for symbol in symbols %}
+{% for stock in stocks %}
 {% if loop.index0 < 10000 %}
-<a class="dk" id="d_{{ symbol|lower }}" data-symbol="{{ symbol|lower }}" target="_blank"><img src="http://image.sinajs.cn/newchart/daily/n/{{ symbol|lower }}.gif" width="300" /></a>
-<a class="wk" id="w_{{ symbol|lower }}" style="display:none;" data-symbol="{{ symbol|lower }}" target="_blank"><img src="http://image.sinajs.cn/newchart/weekly/n/{{ symbol|lower }}.gif" width="300" /></a>
-<a class="link" target="_blank" href="http://xueqiu.com/S/{{ symbol }}">雪</a>
+<a class="dk" id="d_{{ stock.symbol|lower }}" data-symbol="{{ stock.symbol|lower }}" target="_blank"><img src="http://image.sinajs.cn/newchart/daily/n/{{ stock.symbol|lower }}.gif" width="300" /></a>
+<a class="wk" id="w_{{ stock.symbol|lower }}" style="display:none;" data-symbol="{{ stock.symbol|lower }}" target="_blank"><img src="http://image.sinajs.cn/newchart/weekly/n/{{ stock.symbol|lower }}.gif" width="300" /></a>
+<a class="link" target="_blank" href="http://xueqiu.com/S/{{ stock.symbol }}">雪</a>
 {% endif %}
 {% endfor %}
 </div>
@@ -35,21 +88,41 @@ $(function(){
             $(this).prev().show();
             return false;
         });
-        $("#switch").click(function(){
-            if($(this).data("type") == "daily") {
-                $(this).html("周");
-                $(this).data("type", "weekly");
+        $("#dayweek-switch").bootstrapSwitch({'size':'mini',
+                        'onColor':'primary','offColor':'warning',
+                        'onText':'日K','offText':'周K'});
+        $("#dayweek-switch").show();
+        $("#dayweek-switch").on('switchChange.bootstrapSwitch', function(event, state) {
+            if(state == false) {
                 $("#kgraphs").find(".dk").hide();
                 $("#kgraphs").find(".wk").show();
             } else {
-                $(this).html("日");
-                $(this).data("type", "daily");
                 $("#kgraphs").find(".wk").hide();
                 $("#kgraphs").find(".dk").show();
             }
         });
 });
-
 </script>
+{% endif %}
+<script type="text/javascript">
+    $("#display-switch").bootstrapSwitch({'size':'mini',
+                        'onColor':'primary','offColor':'warning',
+                        'onText':'列表','offText':'K线'});
+    $("#display-switch").show();
+    $("#display-switch").on('switchChange.bootstrapSwitch', function(event, state) {
+        if (state == true) {
+            window.location.href="?display=list&script=" + $("#script-box").val();
+        } else {
+            window.location.href="?display=graph&script=" + $("#script-box").val();
+        }
+    });
+    $("#script-form").submit(function(){
+        window.location.href="?display={{ display }}&script=" + $("#script-box").val();
+        return false;
+    });
+</script>
+{% endblock %}
+{#
 </body>
 </html>
+#}
