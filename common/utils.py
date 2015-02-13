@@ -14,11 +14,25 @@ class Operator(object):
         return a > b
 
     @staticmethod
+    def gte(a, b):
+        return a >= b
+
+    @staticmethod
     def lt(a, b):
         return a < b
+
+    @staticmethod
+    def lte(a, b):
+        return a <= b
 
     @staticmethod
     def exist(a):
         return a is not None and a != ""
 
+    @staticmethod
+    def inn(a, b):
+        if type(b) is list:
+            return a in b
+        else:
+            return a in b.split(':')
 

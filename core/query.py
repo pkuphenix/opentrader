@@ -74,7 +74,7 @@ class QuerySet(object):
         # Case 1
         else:
             # oper must be an operator
-            assert(oper.startswith('$'), 'Invalid operation %s!' % oper)
+            assert oper.startswith('$'), 'Invalid operation %s!' % oper
             oper_func = getattr(Operator, oper[1:])
             rtn = []
             for stock in self.stocks:
@@ -170,6 +170,7 @@ class TestQuerySet(object):
         assert all.run_script('filter(":info::symbol", "SZ002736")').count() == 1
         assert all.run_script('merge(filter(":info::symbol", "SZ002736"), filter(":info::symbol", "SZ002738"))').count() == 2
         assert all.run_script('filter(":instant::high52week", "$gt", 100).orderby(":info::current", "reverse")').count() < 50
+        print all.run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
         
         
 

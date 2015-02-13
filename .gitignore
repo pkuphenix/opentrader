@@ -3,3 +3,6 @@ opentrader.sublime-workspace
 *.pyc
 .DS_Store
 *.csv
+parser.out
+parsetab.py
+*.log
