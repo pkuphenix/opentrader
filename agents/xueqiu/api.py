@@ -101,7 +101,11 @@ class XueqiuAPI(object):
         }
         url = PREFIX + '/stock/forchartk/stocklist.json' + dict_to_param(params)
         resp = self._urlopen(url).read()
-        resp_json = json.loads(resp)
+        try:
+            resp_json = json.loads(resp)
+        except ValueError:
+            print resp
+            raise
         return resp_json['chartlist']
 
     def stock_instant(self, symbols=[]):
