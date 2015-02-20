@@ -8,6 +8,32 @@ class SPEED_MAX:
     pass
 class SPEED_REALTIME:
     pass
+
+class TickerProfile(object):
+    def __init__(self):
+        pass
+
+    def bind_ticker(self, ticker):
+        self.ticker = ticker
+
+    def _release_event(self, name, e):
+        # run the ticker's bound functions for specific event
+        pass
+
+    def _is_working_day(self, t):
+        pass
+
+    def _is_working_hour(self, t):
+        pass
+
+    def _is_working_min(self, t):
+        pass
+
+    def _is_working_sec(self, t):
+        pass
+
+
+
 class Ticker(object):
     def __init__(self, mode=MODE_HISTORY, begin=None, end=None, speed=SPEED_REALTIME):
         self.mode = mode
@@ -26,6 +52,29 @@ class Ticker(object):
         self._method = method
         self._args = args
 
+    @property
+    def now(self):
+        return self._now
+
+    # returns True to enter the hours of this day
+    # False to skip the day
+    def day_runner(self):
+        if self._is_working_day(t):
+            self._release_event('day_start')
+
+    # returns True to enter the mins of this hour
+    # False to skip the hour
+    def hour_runner(self):
+        pass
+
+    # returns True to enter the secs of this min
+    # False to skip the min
+    def min_runner(self):
+        pass
+
+    def sec_runner(self):
+        pass
+
     def run(self):
         delta = timedelta(seconds=1)
         while self._now < self.end:
@@ -43,10 +92,6 @@ class Ticker(object):
                 time.sleep(1)
             else:
                 pass
-
-    @property
-    def now(self):
-        return self._now
 
 
 def test_ticker():

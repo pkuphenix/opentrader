@@ -1,4 +1,4 @@
-import time, urllib2, json, cookielib, sys
+import time, urllib, urllib2, json, cookielib, sys
 from datetime import datetime
 PREFIX = 'http://xueqiu.com'
 
@@ -36,6 +36,22 @@ class XueqiuAPI(object):
         req.add_header('User-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36')
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self._cj))
         return opener.open(req)
+
+    def _urlpost(self, url, data):
+        req = urllib2.Request(url)
+        req.add_header('User-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36')
+        data = urllib.urlencode(data)
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self._cj))
+        return opener.open(req, data)
+
+    def captcha_get(self, file_path):
+        resp = self._urlopen(PREFIX + '/service/captcha/id').read()
+        img = self._urlopen(PREFIX + '/service/captcha/img?_=' + str(current_tick())).read()
+        return open(file_path, 'wb').write(img)
+
+    def captcha_post(self, char):
+        resp = self._urlpost(PREFIX + '/service/captcha', {'code':char}).read()
+        return resp
 
     def stock_list(self, orderby='code'):
         # http://xueqiu.com/stock/cata/stocklist.json
