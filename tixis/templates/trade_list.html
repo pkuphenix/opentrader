@@ -1,0 +1,45 @@
+<h3>进行中的交易：<a href="{{ url_for('trade_add', pid=prog.oid) }}"><i class="fa fa-plus-circle"></i></a></h3>
+<table class="table table-hover">
+    <tr>
+        <th>股票</th>
+        <th>入市时间</th>
+        <th>买入价格</th>
+        <th>平均每股成本</th>
+        <th>初始停价</th>
+        <th>股数</th>
+        <th>初始风险(1R)</th>
+        <th>最新价格(更新时间)</th>
+        <th>当前收益(R倍数)</th>
+    </tr>
+    {% for trade in running_trades %}
+    <tr>
+        <th><a href="{{ trade.url }}">{{ trade.stock.name }}</a></th>
+        <td>{{ trade.buytime }}</td>
+        <td>{{ trade.buyprice }}</td>
+        <td>{{ trade.averagecost }}</td>
+        <td><span class="text-warning">{{ trade.riskprice }}</span></td>
+        <td>{{ trade.amount }}</td>
+        <td>{{ trade.R }}</td>
+        <td><span class="text-primary">{{ trade.stock.latest_price[0] }} ({{ trade.stock.latest_price[1] }})</span></td>
+        {% set income=trade.income %}
+        {% if trade.income < 0 %}
+        <td><span class="text-danger"><b>{{ income }}</b> ({{ income/trade.R }} R)</span></td>
+        {% else %}
+        <td><span class="text-success"><b>{{ income }}</b> ({{ income/trade.R }} R)</span></td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</table>
+<h3>已完成的交易：<a href="{{ url_for('trade_add', pid=prog.oid) }}"></a></h3>
+<table class="table table-hover">
+    <tr>
+        <th>股票</th>
+        <th>入市时间</th>
+    </tr>
+    {% for trade in ended_trades %}
+    <tr>
+        <th><a href="{{ trade.url }}">{{ trade.stock.name }}</a></th>
+        <td>{{ trade.buytime }}</td>
+    </tr>
+    {% endfor %}
+</table>
