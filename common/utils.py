@@ -36,3 +36,31 @@ class Operator(object):
         else:
             return a in b.split(':')
 
+class Event(object):
+    def __init__(self, source, name):
+        self.source = source
+        self.name = name
+
+class Observable(object):
+    def initob(self):
+        self.callbacks = {} # {[]}
+
+    def subscribe(self, name, callback):
+        if name not in self.callbacks:
+            self.callbacks[name] = []
+        self.callbacks[name].append(callback)
+
+    def fire(self, name, **attrs):
+        e = Event(self, name)
+        for k, v in attrs.iteritems():
+            setattr(e, k, v)
+        if name in self.callbacks:
+            for fn in self.callbacks[name]:
+                fn(e)
+
+    def callback_count(self, name):
+        if name not in self.callbacks:
+            return 0
+        else:
+            return len(self.callbacks[name])
+            

@@ -1,5 +1,6 @@
-from utils import gen_time
-from datetime import datetime, timedelta
+from common.utils import gen_time, Observable
+from common.db import db_ot
+from datetime import datetime, timedelta, date, time as daytime
 import time
 
 MODE_HISTORY = 0
@@ -9,66 +10,107 @@ class SPEED_MAX:
 class SPEED_REALTIME:
     pass
 
-class TickerProfile(object):
-    def __init__(self):
-        pass
+class TradeCalendar(object):
+    open_time = daytime(9, 30)
+    close_time = daytime(15, 0)
+    cache_dates = {}
 
-    def bind_ticker(self, ticker):
-        self.ticker = ticker
+    @staticmethod
+    def build_date_cache():
+        cur_date = None
+        last_date = None
+        # build the datastructure
+        for each in db_ot.xueqiu_k_day.find({'symbol':'SH000001'}):
+            last_date = cur_date
+            cur_date = each['time'].date()
+            TradeCalendar.cache_dates[cur_date] = {'last':last_date, 'next':None}
+            if last_date is not None:
+                TradeCalendar.cache_dates[last_date]['next'] = cur_date
 
-    def _release_event(self, name, e):
-        # run the ticker's bound functions for specific event
-        pass
+    @staticmethod
+    def check_date(d):
+        if not TradeCalendar.cache_dates:
+            TradeCalendar.build_date_cache()
+            
+        if d in TradeCalendar.cache_dates:
+            return True
+        else:
+            return False
 
-    def _is_working_day(self, t):
-        pass
-
-    def _is_working_hour(self, t):
-        pass
-
-    def _is_working_min(self, t):
-        pass
-
-    def _is_working_sec(self, t):
-        pass
-
-
-
-class Ticker(object):
-    def __init__(self, mode=MODE_HISTORY, begin=None, end=None, speed=SPEED_REALTIME):
+class Ticker(Observable):
+    def __init__(self, mode=MODE_HISTORY, begin=None, end=None, speed=SPEED_MAX):
+        self.initob()
         self.mode = mode
         self.begin = begin
         self.end = end
         self.speed = speed
 
-        self._obj = None
-        self._method = None
-        self._args = []
-
+        assert self.begin.date() < self.end.date() # must at least last one day
         self._now = self.begin
-
-    def bind(self, obj, method, args=[]):
-        self._obj = obj
-        self._method = method
-        self._args = args
 
     @property
     def now(self):
         return self._now
 
-    # returns True to enter the hours of this day
-    # False to skip the day
-    def day_runner(self):
-        if self._is_working_day(t):
-            self._release_event('day_start')
+    def go(self, t):
+        if type(t) is datetime:
+            self._now = t
+        elif type(t) is date:
+            self._now = self._now.replace(t.year, t.month, t.day, 0, 0, 0, 0)
+        elif type(t) is daytime:
+            self._now = self._now.replace(hour=t.hour, minute=t.minute, second=t.second, microsecond=t.microsecond)
+        else:
+            raise ValueError('invalid datetime object %s' % str(t))
+        return self._now
 
-    # returns True to enter the mins of this hour
-    # False to skip the hour
+    def first_day_runner(self):
+        if not TradeCalendar.check_date(self.now.date()):
+            self.go(self.now.date() + timedelta(days=1))
+            return
+
+        if self.now.time() <= TradeCalendar.open_time:
+            self.go(TradeCalendar.open_time)
+            self.fire('day-open')
+            
+
+        if self.now.time() >= TradeCalendar.open_time and self.now.time() <= TradeCalendar.close_time:
+            self.go(TradeCalendar.close_time)
+            self.fire('day-close')
+
+        if self.now.time() > TradeCalendar.close_time:
+            self.go(self.now.date() + timedelta(days=1))
+
+    def last_day_runner(self):
+        if not TradeCalendar.check_date(self.now.date()):
+            return
+
+        if self.end.time() < TradeCalendar.open_time:
+            return
+
+        self.go(TradeCalendar.open_time)
+        self.fire('day-open')
+
+        if self.end.time() < TradeCalendar.close_time:
+            return
+        
+        self.go(TradeCalendar.close_time)
+        self.fire('day-close')
+        self.go(self.end)
+
+    def day_runner(self):
+        if not TradeCalendar.check_date(self.now.date()):
+            self.go(self.now.date() + timedelta(days=1))
+            return
+
+        self.go(TradeCalendar.open_time)
+        self.fire('day-open')
+        self.go(TradeCalendar.close_time)
+        self.fire('day-close')
+        self.go(self.now.date() + timedelta(days=1))
+
     def hour_runner(self):
         pass
 
-    # returns True to enter the secs of this min
-    # False to skip the min
     def min_runner(self):
         pass
 
@@ -76,34 +118,27 @@ class Ticker(object):
         pass
 
     def run(self):
-        delta = timedelta(seconds=1)
-        while self._now < self.end:
-            self._now += delta
-            # run the bound method
-            if self._obj is not None:
-                getattr(self._obj, self._method)(*self._args)
-            else:
-                self._method(*self._args)
-
-            # sleep a while
-            if self.speed is SPEED_MAX:
-                time.sleep(0.01)
-            elif self.speed is SPEED_REALTIME:
-                time.sleep(1)
-            else:
-                pass
+        # release a event at the beginning of this run
+        self.fire('ticker-begin')
+        # consume first day
+        self.first_day_runner()
+        while self.now.date() < self.end.date():
+            self.day_runner()
+        self.last_day_runner()
+        self.fire('ticker-end')
 
 
 def test_ticker():
     ticker = Ticker(mode=MODE_REALTIME,
-                    begin=gen_time('2014-01-01 09:30:00'),
-                    end=gen_time('2014-12-31 15:00:00'),
+                    begin=gen_time('2014-01-01 00:00:00'),
+                    end=gen_time('2014-12-31 23:00:00'),
                     speed=SPEED_REALTIME)
-    def testrunner():
-        print '.' + str(ticker.now)
+    def testrunner(e):
+        print '%s: %s' % (e.name, str(e.source.now))
         
-    ticker.bind(None, testrunner)
+    ticker.subscribe('ticker-begin', testrunner)
+    ticker.subscribe('ticker-end', testrunner)
+    ticker.subscribe('day-open', testrunner)
+    ticker.subscribe('day-close', testrunner)
     ticker.run()
-    print ticker.now
-    sleep(3)
-    print ticker.now
+

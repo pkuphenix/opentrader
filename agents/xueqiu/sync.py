@@ -79,7 +79,7 @@ class XueqiuSyncer(object):
         return updated
 
     # {"symbol":"SH000001", "time":"Mon Jan 13 00:00:00 +0800 2014", "volume":1.019157E7,"open":14.82,"high":15.35,"close":14.9,"low":14.51,"chg":0.0,"percent":0.0,"turnrate":1.52,"ma5":15.05,"ma10":15.13,"ma20":15.1,"ma30":15.66,"dif":-0.56,"dea":-0.71,"macd":0.3}
-    # notice to create index for mongodb: db.xueqiu_k_day.ensureIndex({symbol:1, time:1})
+    # notice to create index for mongodb: db.xueqiu_k_day.ensureIndex({symbol:1, time:1},{unique:true, dropDups:true})
     def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None):
         print 'Start syncing xueqiu k day...'
         total_updated = 0
@@ -189,7 +189,7 @@ def main():
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(begin='2012-01-01 00:00:00', end='2015-02-17 16:16:16')
+        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2012-01-01 00:00:00', end='2015-02-17 16:16:16')
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()

@@ -19,7 +19,7 @@ class Stock(object):
         today = datetime.today()
         today = datetime(today.year, today.month, today.day)
         if instant is None and initialized == False:
-            self._latest_instant = db_ot.xueqiu_instant.find_one({'symbol':self.symbol, 'date':today})
+            self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol}).sort('date', -1)[0]
         else:
             self._latest_instant = instant
     
@@ -46,6 +46,28 @@ class Stock(object):
             return self._latest_instant
         else:
             return self._latest_instant.get(key, None)
+
+    # returns (price, last_update_time)
+    @property
+    def latest_price(self):
+        return (self.instant('current'), self.instant('time'))
+
+    def atr(self, length):
+        result = db_ot.xueqiu_k_day.find({'symbol':self.symbol}).sort('time', pymongo.DESCENDING).limit(length+1)
+        result = list(result)
+        result.reverse()
+        if not result or len(result) < 2:
+            raise StockDataNotExist('no enough data for ATR computing')
+        i = 1
+        TRs = 0
+        while i < len(result):
+            PDC = result[i-1]['close']
+            H = result[i]['high']
+            L = result[i]['low']
+            TR = max(H-L, H-PDC, PDC-L)
+            TRs += TR
+            i += 1
+        return round(float(TRs)/float(len(result)-1), 2)
 
     def __str__(self):
         return self.symbol

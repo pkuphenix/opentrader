@@ -2,6 +2,7 @@ from tixis import app
 from flask import request, render_template, url_for, redirect
 from common.db import db_tixis
 from bson.objectid import ObjectId
+from common.utils import gen_time
 
 class ValidationError(Exception):
     pass
@@ -17,7 +18,14 @@ class TixisModel(object):
     def new(cls, **kwargs):
         for field in cls._fields:
             if field.name in kwargs:
-                field.validate(field.standarlize(kwargs[field.name]))
+                if kwargs[field.name] in ('', None):
+                    if field.optional:
+                        kwargs[field.name] = field.default
+                    else:
+                        raise ValidationError('Field %s is not optional.' % field.name)
+                else:
+                    kwargs[field.name] = field.standarlize(kwargs[field.name])
+                    field.validate(kwargs[field.name])
             else:
                 if field.optional:
                     kwargs[field.name] = field.default
@@ -25,7 +33,6 @@ class TixisModel(object):
                     raise ValidationError('Field %s is not optional.' % field.name)
         # create the instance in db
         oid = cls.db().insert(kwargs)
-
         return cls(str(oid))
 
     @classmethod
@@ -58,6 +65,10 @@ class TixisModel(object):
             inst = self.__class__.db().find_one({'_id':ObjectId(oid)})
             if not inst:
                 raise KeyError('No instance with this ID found: %s.' % oid)
+        self.init()
+
+    def init(self):
+        pass # to be overwritten by sub classes
         
     def get(self):
         inst = self.__class__.db().find_one({'_id':ObjectId(self.oid)})
@@ -101,5 +112,20 @@ class UIntField(TixisField):
 
 class EnumField(TixisField):
     pass
+
+class OIDField(TixisField):
+    def standarlize(self, val):
+        return ObjectId(val)
+
+class TimeField(TixisField):
+    def standarlize(self, val):
+        if type(val) == str or type(val) == unicode:
+            return gen_time(val)
+        else:
+            return val
+
+class PriceField(TixisField):
+    def standarlize(self, val):
+        return round(float(val), 2)
 
 

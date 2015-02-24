@@ -30,7 +30,7 @@ def program_add():
             return render_template('program_add.html', error_show='', error_msg=str(e))
         return redirect(url_for('program_detail', oid=prog.oid))
 
-@app.route("/program/detail/<oid>")
+@app.route("/program/<oid>")
 def program_detail(oid):
     try:
         prog = Program(oid)

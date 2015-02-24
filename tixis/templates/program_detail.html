@@ -8,6 +8,13 @@
     </div>
     <div class="panel-body">
         {{ prog.desc }}
+        <div id="trade_tables">
+        </div>
+        <script type="text/javascript">
+        $.get("{{ url_for('trade_list', pid=prog.oid) }}", function(result){
+            $('#trade_tables').html(result);
+        });
+        </script>
     </div>
 </div>
 </div>

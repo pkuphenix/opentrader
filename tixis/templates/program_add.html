@@ -11,7 +11,7 @@
           <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
           {{ error_msg }}
         </div>
-        <form method="POST" action="/program/add">
+        <form method="POST" action="{{ url_for('program_add') }}">
           <div class="form-group">
             <label for="program_name">名称 *</label>
             <input type="text" class="form-control" name="program_name" id="program_name" placeholder="方案名称">
