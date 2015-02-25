@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block main_content %}
+<div class="alert alert-danger {{ error_show }}" role="alert">
+  <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+  {{ error_msg }}
+</div>
+<img src="http://lqian.net/test/captcha.jpg" />
+<form method="POST" action="{{ url_for('captcha_hack') }}">
+<input type="text" name="captcha" />
+<input type="submit" />
+</form>
+{% endblock %}
