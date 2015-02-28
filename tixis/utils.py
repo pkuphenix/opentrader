@@ -6,11 +6,11 @@ from agents.xueqiu.api import XueqiuAPI
 
 @app.route("/utils/captcha", methods=['POST','GET'])
 def captcha_hack():
-    a = XueqiuAPI()
+    a = XueqiuAPI.get_api()
     if request.method == 'GET':
         a.captcha_get('/var/www/test/captcha.jpg')
         return render_template('captcha_hack.html', error_show='hidden')
     elif request.method == 'POST':
-        captcha = request.form['captcha']
+        captcha = str(request.form['captcha'])
         e = a.captcha_post(captcha)
         return render_template('captcha_hack.html', error_show='', error_msg=str(e))

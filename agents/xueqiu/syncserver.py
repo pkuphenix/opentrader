@@ -2,6 +2,7 @@
 import os, sys
 from optparse import OptionParser
 from sync import XueqiuSyncer
+from api import XueqiuAPI, time_parse, current_tick
 from datetime import datetime
 import time
 from core.query import QuerySet
@@ -9,7 +10,7 @@ from common.db import db_ot
 import pymongo
 
 def sync_inst():
-    syncer = XueqiuSyncer()
+    syncer = XueqiuSyncer(gentle=True)
     now = datetime.now()
     today = datetime(now.year, now.month, now.day)
     print now
@@ -17,6 +18,7 @@ def sync_inst():
         syncer.sync_xueqiu_instant()
     except:
         print 'error syncing xueqiu instant'
+        raise
     #####################
     # Policy New High
     #####################
@@ -33,14 +35,23 @@ def sync_inst():
         print 'newhigh symbol list inserted: %s' % sym_list
 
 def sync_list():
-    syncer = XueqiuSyncer()
+    syncer = XueqiuSyncer(gentle=True)
     now = datetime.now()
     today = datetime(now.year, now.month, now.day)
+    end = current_tick()
+    begin = end - 1000 * 24 * 3600 # one day ago
     print now
     try:
         syncer.sync_xueqiu_info()
     except:
         print 'error syncing xueqiu info'
+        raise
+
+    try:
+        syncer.sync_xueqiu_k_day(begin=begin, end=end)
+    except:
+        print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
+        raise
             
 def main():
     sys_args = sys.argv[1:]

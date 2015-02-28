@@ -6,6 +6,9 @@
     <input type="checkbox" id="display-switch" style="display:none;" name="display-switch" {% if display=="list" %}checked{% endif %} />
     {% if display=="graph" %}
     <input type="checkbox" id="dayweek-switch" style="display:none;" name="dayweek-switch" checked />
+    <a id="size-btn-small" checked="true" href="#">小</a>&nbsp;
+    <a id="size-btn-mid" href="#">中</a>&nbsp;
+    <a id="size-btn-big" href="#">大</a>&nbsp;
     {% endif %}
     <i class="fa fa-info-circle text-info" id="help-info"></i>
     <form class="form" id="script-form" style="margin-top:10px;">
@@ -85,6 +88,15 @@ $(function(){
                 $("#kgraphs").find(".wk").hide();
                 $("#kgraphs").find(".dk").show();
             }
+        });
+        $("#size-btn-small").click(function(e){
+                $("#kgraphs").find("img").css("width", "300px");
+        });
+        $("#size-btn-mid").click(function(e){
+                $("#kgraphs").find("img").css("width", "500px");
+        });
+        $("#size-btn-big").click(function(e){
+                $("#kgraphs").find("img").css("width", "800px");
         });
 });
 </script>

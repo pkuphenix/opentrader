@@ -1,4 +1,5 @@
 <h3>进行中的交易：<a href="{{ url_for('trade_add', pid=prog.oid) }}"><i class="fa fa-plus-circle"></i></a></h3>
+<a href="{{ url_for('landscape') }}?display=graph&script=filter(%22:info::symbol%22,%22$inn%22,%22{{ running_symbols }}%22)">看K线</a>
 <table class="table table-hover">
     <tr>
         <th>股票</th>
@@ -23,9 +24,9 @@
         <td><span class="text-primary">{{ trade.stock.latest_price[0] }} ({{ trade.stock.latest_price[1] }})</span></td>
         {% set income=trade.income %}
         {% if trade.income < 0 %}
-        <td><span class="text-danger"><b>{{ income }}</b> ({{ income/trade.R }} R)</span></td>
+        <td><span class="text-danger"><b>{{ income }}</b> ({{ trade.income_R }} R)</span></td>
         {% else %}
-        <td><span class="text-success"><b>{{ income }}</b> ({{ income/trade.R }} R)</span></td>
+        <td><span class="text-success"><b>{{ income }}</b> ({{ trade.income_R }} R)</span></td>
         {% endif %}
     </tr>
     {% endfor %}

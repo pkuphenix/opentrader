@@ -27,6 +27,18 @@ def time_parse(time_str):
 
 
 class XueqiuAPI(object):
+    one_min_cache = None
+    one_min_cache_time = time.time()
+
+    @staticmethod
+    def get_api():
+        if time.time()-XueqiuAPI.one_min_cache_time < 60 and XueqiuAPI.one_min_cache is not None:
+            return XueqiuAPI.one_min_cache
+        else:
+            XueqiuAPI.one_min_cache = XueqiuAPI()
+            XueqiuAPI.one_min_cache_time = time.time()
+            return XueqiuAPI.one_min_cache
+            
     def __init__(self):
         self._cj = cookielib.CookieJar()
         self._urlopen(PREFIX) # to initialize the cookie jar
@@ -131,7 +143,10 @@ class XueqiuAPI(object):
         }
         url = PREFIX + '/stock/quote.json' + dict_to_param(params)
         resp = self._urlopen(url).read()
-        resp_json = json.loads(resp)
+        try:
+            resp_json = json.loads(resp)
+        except ValueError:
+            raise ValueError('response not a valid JSON: %s' % resp)
         return resp_json['quotes']
 
 def test_stock_list():

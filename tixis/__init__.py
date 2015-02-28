@@ -5,6 +5,7 @@ app = Flask(__name__)
 import program
 import trade
 import landscape
+import utils
 
 @app.route("/")
 def hello():

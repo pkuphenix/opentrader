@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os, sys
+import os, sys, time
 from optparse import OptionParser
 from api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
@@ -27,9 +27,10 @@ def convert_str_to_number(doc, int_keys=[], float_keys=[]):
             
 
 class XueqiuSyncer(object):
-    def __init__(self, ip='127.0.0.1', port=27017):
+    def __init__(self, ip='127.0.0.1', port=27017, gentle=False):
         self.api = XueqiuAPI()
         self.db = MongoClient(ip, port).opentrader
+        self.gentle = gentle
 
     # {"symbol":"SZ002738","code":"002738","name":"中矿资源",
     #  "current":"19.32","percent":"10.02","change":"1.76","high":"19.32","low":"19.32",
@@ -76,6 +77,8 @@ class XueqiuSyncer(object):
                 print 'stock %d: %s... inserted date %s' % (i, sym, str(date))
             else:
                 print 'stock %d: %s... already have it for date %s' % (i, sym, str(date))
+            if self.gentle:
+                time.sleep(1)
         return updated
 
     # {"symbol":"SH000001", "time":"Mon Jan 13 00:00:00 +0800 2014", "volume":1.019157E7,"open":14.82,"high":15.35,"close":14.9,"low":14.51,"chg":0.0,"percent":0.0,"turnrate":1.52,"ma5":15.05,"ma10":15.13,"ma20":15.1,"ma30":15.66,"dif":-0.56,"dea":-0.71,"macd":0.3}
@@ -110,6 +113,8 @@ class XueqiuSyncer(object):
                     total_updated += 1
                     updated += 1
             print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(latest_time))
+            if self.gentle:
+                time.sleep(0.2)
         return total_updated
     """
     {"symbol":"SZ300059","exchange":"SZ","code":"300059","name":"东方财富","current":"41.25","percentage":"-5.56","change":"-2.430","open":"43.0","high":"44.0","low":"40.28","close":"0.0",
@@ -135,11 +140,12 @@ class XueqiuSyncer(object):
         total_len = len(symbols)
         for (i, sym) in enumerate(symbols):
             if len(tmp_sym_list) == 100 or i == total_len-1:
-                self.db.xueqiu_instant.remove({'symbol':{'$in':tmp_sym_list}, 'date':today})
                 instant_data = self.api.stock_instant(tmp_sym_list)
                 if not instant_data:
                     print 'stock %d: %s... fail to query from xueqiu instant for today %s' % (i, tmp_sym_list, str(today))
                     continue
+		# only remove the old one when the new data is successfully fetched
+                self.db.xueqiu_instant.remove({'symbol':{'$in':tmp_sym_list}, 'date':today})
                 for each in instant_data:
                     each['time'] = time_parse(each['time'])
                     each['date'] = today
@@ -154,6 +160,8 @@ class XueqiuSyncer(object):
                 updated += len(tmp_sym_list)
                 print '%d stocks: %s... inserted for today %s' % (len(tmp_sym_list), tmp_sym_list[0], str(today))
                 tmp_sym_list = []
+                if self.gentle:
+                    time.sleep(0.5)
             else:
                 tmp_sym_list.append(sym)
         return updated
@@ -185,6 +193,9 @@ def main():
     if options.list is not None:
         syncer = XueqiuSyncer()
         syncer.sync_xueqiu_info()
+        end = current_tick()
+        begin = end - 1000 * 24 * 3600 # one day ago
+        syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
     # -a
     elif options.all is not None:
         syncer = XueqiuSyncer()

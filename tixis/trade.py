@@ -39,6 +39,10 @@ class Trade(TixisModel):
     def income(self):
         return (self.stock.latest_price[0] - self.averagecost) * self.amount
 
+    @property
+    def income_R(self):
+        return round(self.income/self.R, 2)
+
 @app.route("/program/<pid>/trades")
 def trade_list(pid):
     try:
@@ -46,8 +50,9 @@ def trade_list(pid):
     except KeyError:
         abort(404)
     running_trades = Trade.find({'program':ObjectId(pid), 'status':'running'})
+    running_symbols = ':'.join([trade.symbol for trade in running_trades])
     ended_trades = Trade.find({'program':ObjectId(pid), 'status':'ended'})
-    return render_template('trade_list.html', prog=prog, running_trades=running_trades, ended_trades=ended_trades)
+    return render_template('trade_list.html', prog=prog, running_trades=running_trades, ended_trades=ended_trades, running_symbols=running_symbols)
 
 @app.route("/program/<pid>/addtrade", methods=['POST','GET'])
 def trade_add(pid):
