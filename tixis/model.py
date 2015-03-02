@@ -76,9 +76,30 @@ class TixisModel(object):
             raise KeyError('No instance with this ID found: %s.' % oid)
         return inst
 
+    def update(self, **kwargs):
+        for field in self._fields:
+            if field.name in kwargs:
+                if kwargs[field.name] in ('', None):
+                    if field.optional:
+                        kwargs[field.name] = field.default
+                    else:
+                        raise ValidationError('Field %s is not optional.' % field.name)
+                else:
+                    kwargs[field.name] = field.standarlize(kwargs[field.name])
+                    field.validate(kwargs[field.name])
+
+        # update the instance in db
+        return self.db().update({"_id":ObjectId(self.oid)}, {"$set":kwargs})
+
     @property
     def url(self):
         return url_for('program_detail', oid=self.oid)
+
+    def display(self, fieldname):
+        for each in self._fields:
+            if each.name == fieldname:
+                return each.display(self.get().get(fieldname))
+        return ''
         
     def __getattr__(self, attr):
         return self.get().get(attr)
@@ -95,6 +116,12 @@ class TixisField(object):
 
     def standarlize(self, val):
         return val
+
+    def display(self, val):
+        if val is None:
+            return ''
+        else:
+            return str(val)
 
 class CharField(TixisField):
     pass

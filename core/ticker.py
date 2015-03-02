@@ -1,14 +1,7 @@
 from common.utils import gen_time, Observable
 from common.db import db_ot
 from datetime import datetime, timedelta, date, time as daytime
-import time
-
-MODE_HISTORY = 0
-MODE_REALTIME = 1
-class SPEED_MAX:
-    pass
-class SPEED_REALTIME:
-    pass
+import time, threading
 
 class TradeCalendar(object):
     open_time = daytime(9, 30)
@@ -38,12 +31,10 @@ class TradeCalendar(object):
             return False
 
 class Ticker(Observable):
-    def __init__(self, mode=MODE_HISTORY, begin=None, end=None, speed=SPEED_MAX):
+    def __init__(self, begin=None, end=None):
         self.initob()
-        self.mode = mode
         self.begin = begin
         self.end = end
-        self.speed = speed
 
         assert self.begin.date() < self.end.date() # must at least last one day
         self._now = self.begin
@@ -63,7 +54,7 @@ class Ticker(Observable):
             raise ValueError('invalid datetime object %s' % str(t))
         return self._now
 
-    def first_day_runner(self):
+    def _first_day_runner(self):
         if not TradeCalendar.check_date(self.now.date()):
             self.go(self.now.date() + timedelta(days=1))
             return
@@ -80,7 +71,7 @@ class Ticker(Observable):
         if self.now.time() > TradeCalendar.close_time:
             self.go(self.now.date() + timedelta(days=1))
 
-    def last_day_runner(self):
+    def _last_day_runner(self):
         if not TradeCalendar.check_date(self.now.date()):
             return
 
@@ -97,7 +88,7 @@ class Ticker(Observable):
         self.fire('day-close')
         self.go(self.end)
 
-    def day_runner(self):
+    def _day_runner(self):
         if not TradeCalendar.check_date(self.now.date()):
             self.go(self.now.date() + timedelta(days=1))
             return
@@ -108,31 +99,113 @@ class Ticker(Observable):
         self.fire('day-close')
         self.go(self.now.date() + timedelta(days=1))
 
-    def hour_runner(self):
+    def _hour_runner(self):
         pass
 
-    def min_runner(self):
+    def _min_runner(self):
         pass
 
-    def sec_runner(self):
+    def _sec_runner(self):
         pass
 
     def run(self):
         # release a event at the beginning of this run
         self.fire('ticker-begin')
         # consume first day
-        self.first_day_runner()
+        self._first_day_runner()
         while self.now.date() < self.end.date():
-            self.day_runner()
-        self.last_day_runner()
+            self._day_runner()
+        self._last_day_runner()
         self.fire('ticker-end')
 
+    def bias(self):
+        return 0
+
+class RealtimeTicker(Observable):
+    def __init__(self):
+        self.initob()
+        self._now = datetime.now()
+        self._thread = RealtimeTicker.TickerThread(self)
+
+    @property
+    def now(self):
+        return self._now
+
+    def go(self, t):
+        raise AssertionError('Realtime ticker could not be played as a time machine :)')
+
+    def _step(self):
+        self._now += timedelta(seconds=1)
+
+    class TickerThread(threading.Thread):
+        def __init__(self, ticker):
+            super(RealtimeTicker.TickerThread, self).__init__()
+            self.cancelled = False
+            self.ticker = ticker
+            self._hour_ignore = False
+            self._day_ignore = False
+
+        def run(self):
+            """Overloaded Thread.run, runs the update 
+            method once per every 10 milliseconds."""
+            while not self.cancelled:
+                self.update_second()
+                # try to fix the bias                
+                if self.ticker.bias < timedelta(seconds=1):
+                    time.sleep((timedelta(seconds=1) - self.ticker.bias).microseconds / 1000000.0)
+                self.ticker._step()
+
+        # called every software second
+        def update_second(self):
+            if self.ticker.now.second == 0:
+                self.update_minute()
+
+        def update_minute(self):
+            if self.ticker.now.minute == 0:
+                self.update_hour() # may set _hour_ignore
+
+            if not self._hour_ignore and not self._day_ignore:
+                if self.ticker.now.time() == TradeCalendar.open_time:
+                    self.ticker.fire('day-open')
+                if self.ticker.now.time() == TradeCalendar.close_time:
+                    self.ticker.fire('day-close')
+
+        def update_hour(self):
+            if self.ticker.now.hour == 0:
+                self.update_day() # may set _day_ignore
+
+        def update_day(self):
+            if not TradeCalendar.check_date(self.ticker.now.date()):
+                self._day_ignore = True
+            else:
+                self._day_ignore = False
+
+        def cancel(self):
+            """End this timer thread"""
+            self.cancelled = True
+
+    def run(self):
+        # release a event at the beginning of this run
+        self.fire('ticker-begin')
+        self._now = datetime.now()
+        # create a new thread to run the ticker
+        self._thread.start()
+        #self.fire('ticker-end')
+
+    def stop(self):
+        self._thread.cancel()
+        self._thread.join(1)
+
+    # bias means how much real-world time is faster than the ticker's time
+    @property
+    def bias(self):
+        return datetime.now() - self.now
+
+RT = RealtimeTicker()
 
 def test_ticker():
-    ticker = Ticker(mode=MODE_REALTIME,
-                    begin=gen_time('2014-01-01 00:00:00'),
-                    end=gen_time('2014-12-31 23:00:00'),
-                    speed=SPEED_REALTIME)
+    ticker = Ticker(begin=gen_time('2014-01-01 00:00:00'),
+                    end=gen_time('2014-12-31 23:00:00'))
     def testrunner(e):
         print '%s: %s' % (e.name, str(e.source.now))
         
@@ -141,4 +214,15 @@ def test_ticker():
     ticker.subscribe('day-open', testrunner)
     ticker.subscribe('day-close', testrunner)
     ticker.run()
+
+def test_realtime_ticker():
+    rt = RealtimeTicker()
+    rt.run()
+    i = 0
+    while i < 10:
+        print rt.now
+        print rt.bias
+        time.sleep(1)
+        i += 1
+    rt.stop()
 

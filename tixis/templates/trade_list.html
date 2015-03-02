@@ -36,11 +36,24 @@
     <tr>
         <th>股票</th>
         <th>入市时间</th>
+        <th>入市价格</th>
+        <th>退出时间</th>
+        <th>卖出时间</th>
+        <th>最终收益(R倍数)</th>
     </tr>
     {% for trade in ended_trades %}
     <tr>
         <th><a href="{{ trade.url }}">{{ trade.stock.name }}</a></th>
         <td>{{ trade.buytime }}</td>
+        <td>{{ trade.buyprice }}</td>
+        <td>{{ trade.endtime }}</td>
+        <td>{{ trade.sellprice }}</td>
+        {% set finalincome=trade.finalincome %}
+        {% if trade.finalincome < 0 %}
+        <td><span class="text-danger"><b>{{ finalincome }}</b> ({{ trade.finalincome_R }} R)</span></td>
+        {% else %}
+        <td><span class="text-success"><b>{{ finalincome }}</b> ({{ trade.finalincome_R }} R)</span></td>
+        {% endif %}
     </tr>
     {% endfor %}
 </table>

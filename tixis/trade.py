@@ -17,9 +17,9 @@ class Trade(TixisModel):
         PriceField(name="averagecost", optional=False),
 
         # for ended trades
-        EnumField(name="status", values=('running', 'ended'), optional=False, default="running"),
+        EnumField(name="status", values=('watch','running', 'ended'), optional=False, default="running"),
         TimeField(name="endtime"),
-        PriceField(name="finalincome"),
+        PriceField(name="sellprice"),
     ]
 
     def init(self):
@@ -42,6 +42,18 @@ class Trade(TixisModel):
     @property
     def income_R(self):
         return round(self.income/self.R, 2)
+
+    @property
+    def finalincome(self):
+        return (self.sellprice - self.averagecost) * self.amount
+
+    @property
+    def finalincome_R(self):
+        return round(self.finalincome/self.R, 2)
+
+    @property
+    def url(self):
+        return url_for('trade_edit', pid=self.program, tid=self.oid)
 
 @app.route("/program/<pid>/trades")
 def trade_list(pid):
@@ -74,10 +86,44 @@ def trade_add(pid):
 
             'status': request.form['status'],
             'endtime': request.form['endtime'] or None,
-            'finalincome': request.form['finalincome'] or None,
+            'sellprice': request.form['sellprice'] or None,
         }
         try:
             tr = Trade.new(**new_trade)
         except ValidationError, e:
             return render_template('trade_add.html', error_show='', error_msg=str(e))
         return redirect(url_for('program_detail', oid=pid))
+
+@app.route("/program/<pid>/edittrade/<tid>", methods=['POST','GET'])
+def trade_edit(pid, tid):
+    try:
+        prog = Program(pid)
+    except KeyError:
+        abort(404)
+    try:
+        trade = Trade(tid)
+    except KeyError:
+        abort(404)
+    if request.method == 'GET':
+        return render_template('trade_edit.html', prog=prog, trade=trade, error_show='hidden')
+    elif request.method == 'POST':
+        new_info = {
+            'program': pid,
+            'symbol': request.form['symbol'],
+            'buytime': request.form['buytime'],
+            'buyprice': request.form['buyprice'],
+            'riskprice': request.form['riskprice'],
+            'amount': request.form['amount'],
+            'averagecost': request.form['averagecost'],
+
+            'status': request.form['status'],
+            'endtime': request.form['endtime'] or None,
+            'sellprice': request.form['sellprice'] or None,
+        }
+        try:
+            trade.update(**new_info)
+        except ValidationError, e:
+            return render_template('trade_edit.html', prog=prog, trade=trade, error_show='', error_msg=str(e))
+        return render_template('trade_edit.html', prog=prog, trade=trade, error_show='hidden')
+        #return redirect(url_for('program_detail', oid=pid))
+

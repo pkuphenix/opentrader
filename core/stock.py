@@ -3,23 +3,30 @@
 from common.db import db_ot
 import pymongo
 from datetime import datetime
+from core.ticker import Ticker, RT
+from common.utils import gen_time
 
 class StockDataNotExist(Exception):
     pass
 
 # stock main class
 class Stock(object): 
-    def __init__(self, symbol=None, info=None, instant=None, initialized=False):
+    def __init__(self, symbol=None, info=None, instant=None, initialized=False, ticker=None):
         self.symbol = symbol
         if info is None:
             self._info = db_ot.xueqiu_info.find_one({'symbol':self.symbol})
         else:
             self._info = info
 
-        today = datetime.today()
+        if ticker is None:
+            self.ticker = RT
+        else:
+            self.ticker = ticker
+
+        today = self.ticker.now.date()
         today = datetime(today.year, today.month, today.day)
         if instant is None and initialized == False:
-            self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol}).sort('date', -1)[0]
+            self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol, 'date':{'$lte':today}}).sort('date', -1)[0]
         else:
             self._latest_instant = instant
     
@@ -69,6 +76,9 @@ class Stock(object):
             i += 1
         return round(float(TRs)/float(len(result)-1), 2)
 
+    def kday(self, date):
+        pass
+
     def __str__(self):
         return self.symbol
 
@@ -84,9 +94,26 @@ class Stock(object):
     
 class TestStock(object):
     def test_get_basic_info(self):
-        s = Stock('SZ002736')
+        s = Stock('SZ000559')
         assert s is not None
-        assert s.name == u'国信证券'
+        assert s.name == u'万向钱潮'
+        assert s.symbol == 'SZ000559'
+
+    def test_get_instant_data(self):
+        s = Stock('SZ000559')
+        assert s.instant('current') == s.instant()['current']
+        assert s.instant()['high'] >= s.instant()['low']
+        assert s.instant('time') > datetime(2015, 2, 1)
+
+        t = Ticker(begin=gen_time('2014-01-01 00:00:00'),
+                   end=gen_time('2014-01-02 23:00:00'))
+        s1 = Stock('SZ000559', ticker=t)
+        def testrunner(e):
+            print '%s: %s' % (e.name, str(e.source.now))
+            print s1.instant('time')
+        
+        t.subscribe('ticker-begin', testrunner)
+
         
         
         
