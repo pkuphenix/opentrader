@@ -1,15 +1,27 @@
 from datetime import datetime
+import time
 
 # str_time: "2010-06-04 21:08:12"
 def gen_time(str_time):
     return datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
 
+def standarlize_time(str_time):
+    if str_time is None:
+        return None
+    if type(str_time) in (str, unicode):
+        return datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+    else:
+        assert type(str_time) is datetime
+        return str_time
+
 def gen_date(str_date):
     return datetime.strptime(str_date, "%Y-%m-%d").date()
 
+# str_time: "2010-06-04 21:08:12" or datetime
 def gen_tick(str_time, precision=1):
-    return 
-
+    if type(str_time) is datetime:
+        str_time = str_time.strftime("%Y-%m-%d %H:%M:%S")
+    return int(time.mktime(time.strptime(str_time, "%Y-%m-%d %H:%M:%S")) * precision)
 
 class Operator(object):
     @staticmethod

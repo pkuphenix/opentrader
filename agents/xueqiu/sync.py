@@ -4,9 +4,9 @@ import os, sys, time
 from optparse import OptionParser
 from api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.ticker import TradeCalendar
-from common.utils import gen_time
+from common.utils import gen_time, standarlize_time, gen_tick
 
 # convert in-place
 def convert_str_to_number(doc, int_keys=[], float_keys=[]):
@@ -83,10 +83,39 @@ class XueqiuSyncer(object):
                 time.sleep(1)
         return updated
 
+    def sync_xueqiu_k_day_pure(self, symbols=None, begin=None, end=None):
+        print 'Start syncing k day pure...'
+        # standarlize begin/end
+        begin = standarlize_time(begin)
+        end = standarlize_time(end)
+        total_updated = 0
+        assert symbols is not None
+
+        for (i, sym) in enumerate(symbols):
+            updated = 0
+            ks = self.api.stock_k_day(sym, begin=begin, end=end)
+            if not ks:
+                print 'stock %d: %s... fetch failure' % (i, sym)
+                continue
+            real_latest_time = time_parse(ks[-1]['time'])
+            for k in ks:
+                k['time'] = time_parse(k['time'])
+                entry = self.db.xueqiu_k_day.find_one({'symbol':sym, 'time':k['time']})
+                k['symbol'] = sym
+                if not entry:
+                    self.db.xueqiu_k_day.insert(k)
+                    total_updated += 1
+                    updated += 1
+            print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(real_latest_time))
+
     # {"symbol":"SH000001", "time":"Mon Jan 13 00:00:00 +0800 2014", "volume":1.019157E7,"open":14.82,"high":15.35,"close":14.9,"low":14.51,"chg":0.0,"percent":0.0,"turnrate":1.52,"ma5":15.05,"ma10":15.13,"ma20":15.1,"ma30":15.66,"dif":-0.56,"dea":-0.71,"macd":0.3}
     # notice to create index for mongodb: db.xueqiu_k_day.ensureIndex({symbol:1, time:1},{unique:true, dropDups:true})
+    # begin, end: support both string or datetime
     def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None, forcecal=False):
         print 'Start syncing xueqiu k day...'
+        # standarlize begin/end
+        begin = standarlize_time(begin)
+        end = standarlize_time(end)
         total_updated = 0
         if symbols is None:
             symbols = self.get_normal_symbols()
@@ -106,7 +135,6 @@ class XueqiuSyncer(object):
                 print 'stock %d: %s... already have it for latest date %s' % (i, sym, str(latest_time))
                 # already has latest date for this symbol, no need to query it.
                 if forcecal:
-                    pass
                     # fetch the entry_list from database
                     entry_list = list(self.db.xueqiu_k_day.find({'symbol':sym, 'time':{'$gte':begin, '$lte':end}}))
             else:
@@ -134,17 +162,46 @@ class XueqiuSyncer(object):
             #########################
             if forcecal or not stock_with_latest_time:
                 high20_updated = 0
+                high55_updated = 0
+                atr20_updated = 0
                 for j, entry in enumerate(entry_list):
                     # high 20
-                    if j >= 20 and 'high20' not in entry:
+                    if j >= 19 and 'high20' not in entry:
                         high = 0
-                        for k in range(j-20, j-1):
+                        for k in range(j-19, j+1): # notice this range is from j-19 to j
                             if entry_list[k]['high'] > high:
                                 high = entry_list[k]['high']
                         entry['high20'] = high
                         self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'high20':high}})
                         high20_updated += 1
-                print 'stock %d: %s... %d high20 updated' % (i, sym, high20_updated)
+
+                    # high 55
+                    if j >= 54 and 'high55' not in entry:
+                        high = 0
+                        for k in range(j-54, j+1): # notice this range is from j-54 to j
+                            if entry_list[k]['high'] > high:
+                                high = entry_list[k]['high']
+                        entry['high55'] = high
+                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'high55':high}})
+                        high55_updated += 1
+                    
+                    # atr 20
+                    if j >= 19 and 'atr20' not in entry:
+                        TRs = 0
+                        for k in range(j-19, j+1):
+                            if k == 0:
+                                PDC = entry_list[k]['open']
+                            else:
+                                PDC = entry_list[k-1]['close']
+                            H = entry_list[k]['high']
+                            L = entry_list[k]['low']
+                            TR = max(H-L, H-PDC, PDC-L)
+                            TRs += TR
+                        entry['atr20'] = round(float(TRs)/20.0, 2)
+                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'atr20':entry['atr20']}})
+                        atr20_updated += 1
+
+                print 'stock %d: %s... %d high20 updated, %d high55 updated, %d atr20 updated' % (i, sym, high20_updated, high55_updated, atr20_updated)
                 
             if self.gentle:
                 time.sleep(0.2)
@@ -227,8 +284,9 @@ def main():
     if options.list is not None:
         syncer = XueqiuSyncer()
         syncer.sync_xueqiu_info()
-        end = current_tick()
-        begin = end - 1000 * 24 * 3600 # one day ago
+        end = datetime.now()
+        begin = end - timedelta(days=1) # one day ago
+        sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
         syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
     # -a
     elif options.all is not None:
@@ -240,8 +298,8 @@ def main():
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_price(symbols=stocks)
         syncer.sync_xueqiu_instant(symbols=stocks)
-        end = current_tick()
-        begin = end - 1000 * 24 * 3600 # one day ago
+        end = datetime.now()
+        begin = end - timedelta(days=1) # one day ago
         #syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
     else:
         pass
@@ -250,3 +308,15 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+def test_xueqiu_k_day():
+    syncer = XueqiuSyncer()
+    syncer.db.xueqiu_k_day.remove({'symbol':'SZ000025'})
+    syncer.sync_xueqiu_k_day(symbols=['SZ000025'], begin='2012-01-01 00:00:00', end='2015-03-04 00:00:00')
+    assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-03-02 00:00:00")})[0]['high20'] == 15.8
+    assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-03-04 00:00:00")})[0]['high20'] == 16.18
+    assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-02-27 00:00:00")})[0]['high20'] == 14.76
+    syncer.sync_xueqiu_k_day(symbols=['SZ000025'], begin='2012-01-01 00:00:00', end='2015-03-05 00:00:00')
+    assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-03-05 00:00:00")})[0]['high20'] == 16.18
+    assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-03-05 00:00:00")})[0]['atr20'] == 0.74
+

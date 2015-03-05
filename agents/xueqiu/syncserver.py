@@ -44,8 +44,8 @@ def sync_list():
     syncer = XueqiuSyncer(gentle=True)
     now = datetime.now()
     today = datetime(now.year, now.month, now.day)
-    end = current_tick()
-    begin = end - 1000 * 24 * 3600 # one day ago
+    end = datetime.now()
+    begin = end - timedelta(days=1) # one day ago
     print now
     try:
         syncer.sync_xueqiu_info()
@@ -54,8 +54,8 @@ def sync_list():
         raise
 
     try:
+        sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
         syncer.sync_xueqiu_k_day(begin=begin, end=end)
-        syncer.sync_xueqiu_k_day(symbols=['SH000001'], begin=begin, end=end)
     except:
         print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
         raise

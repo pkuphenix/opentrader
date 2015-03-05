@@ -1,5 +1,6 @@
 import time, urllib, urllib2, json, cookielib, sys
 from datetime import datetime
+from common.utils import gen_tick
 PREFIX = 'http://xueqiu.com'
 
 def dict_to_param(dict):
@@ -13,10 +14,6 @@ def is_tick(val):
         return True
     else:
         return False
-
-# str_time: "2010-06-04 21:08:12"
-def gen_tick(str_time, precision=1):
-    return int(time.mktime(time.strptime(str_time, "%Y-%m-%d %H:%M:%S")) * precision)
 
 # datetime.strptime('Fri Jan 09 15:09:53 +0800 2015', '%a %b %d %H:%M:%S +0800 %Y')
 # parse the time format by xueqiu into standard datetime instance
