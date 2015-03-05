@@ -45,7 +45,10 @@ class Trade(TixisModel):
 
     @property
     def finalincome(self):
-        return (self.sellprice - self.averagecost) * self.amount
+        if self.sellprice is not None:
+            return (self.sellprice - self.averagecost) * self.amount
+        else:
+            return 0
 
     @property
     def finalincome_R(self):
@@ -124,6 +127,5 @@ def trade_edit(pid, tid):
             trade.update(**new_info)
         except ValidationError, e:
             return render_template('trade_edit.html', prog=prog, trade=trade, error_show='', error_msg=str(e))
-        return render_template('trade_edit.html', prog=prog, trade=trade, error_show='hidden')
-        #return redirect(url_for('program_detail', oid=pid))
+        return redirect(url_for('program_detail', oid=pid))
 

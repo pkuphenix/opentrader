@@ -8,9 +8,10 @@ import time
 from core.query import QuerySet
 from common.db import db_ot
 import pymongo
+from agents.xueqiu.newhigh import update_newhigh_52w
 
 def sync_inst():
-    syncer = XueqiuSyncer(gentle=True)
+    syncer = XueqiuSyncer()
     now = datetime.now()
     today = datetime(now.year, now.month, now.day)
     print now
@@ -22,17 +23,22 @@ def sync_inst():
     #####################
     # Policy New High
     #####################
-    q = QuerySet.all().run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
-    sym_list = [s.symbol for s in q.stocks]
-    existing = list(db_ot.policy_newhigh.find({'date':today}).sort('time', pymongo.DESCENDING))
-    if existing:
-        print 'existing new high: %s' % existing[0]
+    try:
+        update_newhigh_52w()
+    except:
+        print 'error updating 52week new high'
+        raise
+    #q = QuerySet.all().run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
+    #sym_list = [s.symbol for s in q.stocks]
+    #existing = list(db_ot.policy_newhigh.find({'date':today}).sort('time', pymongo.DESCENDING))
+    #if existing:
+    #    print 'existing new high: %s' % existing[0]
     # compare sym_list with the existing list
-    if existing and existing[0]['symbols'] == sym_list:
-        pass
-    else:
-        db_ot.policy_newhigh.insert({'date':today, 'time':now, 'symbols':sym_list})
-        print 'newhigh symbol list inserted: %s' % sym_list
+    #if existing and existing[0]['symbols'] == sym_list:
+    #    pass
+    #else:
+    #    db_ot.policy_newhigh.insert({'date':today, 'time':now, 'symbols':sym_list})
+    #    print 'newhigh symbol list inserted: %s' % sym_list
 
 def sync_list():
     syncer = XueqiuSyncer(gentle=True)
@@ -49,6 +55,7 @@ def sync_list():
 
     try:
         syncer.sync_xueqiu_k_day(begin=begin, end=end)
+        syncer.sync_xueqiu_k_day(symbols=['SH000001'], begin=begin, end=end)
     except:
         print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
         raise

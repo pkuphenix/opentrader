@@ -4,6 +4,9 @@ from datetime import datetime
 def gen_time(str_time):
     return datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
 
+def gen_date(str_date):
+    return datetime.strptime(str_date, "%Y-%m-%d").date()
+
 def gen_tick(str_time, precision=1):
     return 
 

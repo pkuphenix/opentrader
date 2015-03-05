@@ -7,9 +7,12 @@ class TradeCalendar(object):
     open_time = daytime(9, 30)
     close_time = daytime(15, 0)
     cache_dates = {}
+    _cache_latest_date = None
+    _cache_build_date = None
 
     @staticmethod
     def build_date_cache():
+        today = date.today()
         cur_date = None
         last_date = None
         # build the datastructure
@@ -19,16 +22,62 @@ class TradeCalendar(object):
             TradeCalendar.cache_dates[cur_date] = {'last':last_date, 'next':None}
             if last_date is not None:
                 TradeCalendar.cache_dates[last_date]['next'] = cur_date
+        TradeCalendar._cache_latest_date = cur_date
+        # add today if it is not inside cache
+        if not today in TradeCalendar.cache_dates:
+            assert cur_date is not None
+            TradeCalendar.cache_dates[cur_date]['next'] = today
+            TradeCalendar.cache_dates[today] = {'last':cur_date, 'next':None}
+            TradeCalendar._cache_latest_date = today
+        TradeCalendar._cache_build_date = today
 
     @staticmethod
     def check_date(d):
-        if not TradeCalendar.cache_dates:
+        if not TradeCalendar.cache_dates or date.today() > TradeCalendar._cache_build_date:
             TradeCalendar.build_date_cache()
             
         if d in TradeCalendar.cache_dates:
             return True
         else:
             return False
+
+    @staticmethod
+    def get_date(base, bias):
+        if not TradeCalendar.cache_dates or date.today() > TradeCalendar._cache_build_date:
+            TradeCalendar.build_date_cache()
+            
+        # find the base from the cache_dates
+        if base not in TradeCalendar.cache_dates:
+            return None
+        else:
+            d = base
+            b = bias
+            while d is not None:
+                if b > 0:
+                    d = TradeCalendar.cache_dates[d]['next']
+                    b -= 1
+                elif b < 0:
+                    d = TradeCalendar.cache_dates[d]['last']
+                    b += 1
+                else:
+                    break
+            return d
+
+    @staticmethod
+    def get_latest_date_before(base):
+        if not TradeCalendar.cache_dates or date.today() > TradeCalendar._cache_build_date:
+            TradeCalendar.build_date_cache()
+            
+        d = TradeCalendar._cache_latest_date
+        while d is not None:
+            if base >= d:
+                return d
+            else:
+                d = TradeCalendar.cache_dates[d]['last']
+        return d
+
+
+
 
 class Ticker(Observable):
     def __init__(self, begin=None, end=None):
@@ -225,4 +274,14 @@ def test_realtime_ticker():
         time.sleep(1)
         i += 1
     rt.stop()
+
+def test_calendar():
+    test_date1 = gen_time('2015-03-02 00:00:00').date()
+    test_date2 = gen_time('2015-02-26 00:00:00').date()
+    test_date3 = gen_time('2015-02-27 00:00:00').date()
+    test_date4 = gen_time('2015-03-01 00:00:00').date()
+    assert TradeCalendar.get_date(test_date1, -2) == test_date2
+    assert TradeCalendar.get_latest_date_before(test_date4) == test_date3
+    assert TradeCalendar.get_latest_date_before(test_date1) == test_date1
+
 

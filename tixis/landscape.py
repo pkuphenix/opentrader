@@ -5,6 +5,9 @@ from core.stock import Stock
 from urllib import unquote
 from common.db import db_ot
 import pymongo
+from agents.xueqiu.newhigh import *
+from datetime import date
+from common.utils import gen_date
 
 @app.route("/landscape/")
 def landscape():
@@ -18,27 +21,22 @@ def landscape():
         stocks = QuerySet.all().run_script(script).stocks
     return render_template('landscape_overview.html', stocks=stocks, display=display, script=script)
 
-@app.route("/landscape/newhigh")
-def newhigh():
+@app.route('/landscape/newhigh', defaults={'today': None})
+@app.route("/landscape/newhigh/<today>")
+def newhigh(today):
+    if today:
+        today = gen_date(today)
+    else:
+        today = date.today()
     display = request.args.get('display', 'graph') # graph or list
-    limit = request.args.get('limit', '10')
-    records = list(db_ot.policy_newhigh.find().sort('time', pymongo.DESCENDING).limit(int(limit)))
-    records.reverse()
+    (newlist, repeatlist) = get_newhigh_52w(today)
     stock_dict = {}
-    last_symbol_list = []
-    for each_record in records:
-        brand_new_symbol_list = []
-        repeat_new_symbol_list = []
-        for each_symbol in each_record['symbols']:
-            if each_symbol not in stock_dict:
-                # totally new stock
-                stock_dict[each_symbol] = Stock(each_symbol)
-                brand_new_symbol_list.append(each_symbol)
-            elif each_symbol not in last_symbol_list:
-                # not totally new, but not in last list
-                repeat_new_symbol_list.append(each_symbol)
-        last_symbol_list = each_record['symbols']
-        each_record['brand_new'] = brand_new_symbol_list
-        each_record['repeat_new'] = repeat_new_symbol_list
-    records.reverse()
-    return render_template('landscape_newhigh.html', records=records, display=display, stock_dict=stock_dict, symbols=':'.join(stock_dict.keys()))
+    newsymbols = []
+    repeatsymbols = []
+    for each in newlist:
+        newsymbols.append(each['symbol'])
+        stock_dict[each['symbol']] = Stock(each['symbol'])
+    for each in repeatlist:
+        repeatsymbols.append(each['symbol'])
+        stock_dict[each['symbol']] = Stock(each['symbol'])
+    return render_template('landscape_newhigh.html', newlist=newlist, repeatlist=repeatlist, display=display, date=today, stock_dict=stock_dict, newsymbols=':'.join(newsymbols), repeatsymbols=':'.join(repeatsymbols))

@@ -153,6 +153,6 @@ class TimeField(TixisField):
 
 class PriceField(TixisField):
     def standarlize(self, val):
-        return round(float(val), 2)
+        return round(float(val), 3)
 
 

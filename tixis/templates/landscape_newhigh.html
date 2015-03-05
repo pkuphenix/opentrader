@@ -3,17 +3,19 @@
 
 {% block landscape_content %}
 <div class="container-fluid" style="margin-bottom:10px;"><div class="row"><div class="col-md-12">
-记录数：
+<!--记录数：
 <a href="?display={{display}}&limit=10">10</a>
 &nbsp;
 <a href="?display={{display}}&limit=20">20</a>
 &nbsp;
 <a href="?display={{display}}&limit=30">30</a>
 &nbsp;
-<a href="{{ url_for('landscape') }}?display=graph&script=filter(%22:info::symbol%22,%22$inn%22,%22{{ symbols }}%22)">看K线</a>
+-->
+日期：{{ date }}
 <table class="table table-hover">
     <tr>
         <th></th>
+        <th>更新时间</th>
         <th>代码</th>
         <th>名称</th>
         <th>当前价</th>
@@ -27,61 +29,54 @@
         <th>成交额</th>
         <th>操作</th>
     </tr>
-    {% for record in records %}
     <tr>
-        <th colspan="13">{{ record['time'] }}</th>
+        <th colspan="14">全新新高&nbsp;
+<a href="{{ url_for('landscape') }}?display=graph&script=filter(%22:info::symbol%22,%22$inn%22,%22{{ newsymbols }}%22)">看K线</a>
+</th>
     </tr>
-        {% if record['brand_new']|length == 0 and record['repeat_new']|length == 0 %}
-        <tr>
-            <th colspan="13">无更新</th>
-        </tr>
-        {% endif %}
-        {% if record['brand_new']|length > 0 %}
-        <tr>
-            <th colspan="13">全新新高</th>
-        </tr>
-        {% endif %}
-        {% for symbol in record['brand_new'] %}
-        {% set stock=stock_dict[symbol] %}
-        <tr>
-            <th>{{ loop.index }}</th>
-            <td>{{ stock.symbol }}</td>
-            <td>{{ stock.name }}</td>
-            <td>{{ stock.instant('current', noexception=True) }}</td>
-            <td style="font-weight:bold;color:green;">{{ stock.instant('percentage', noexception=True) }}</td>
-            <td>{{ stock.instant('change', noexception=True) }}</td>
-            <td>{{ stock.instant('low', noexception=True) }} - {{ stock.instant('high', noexception=True) }}</td>
-            <td>{{ stock.instant('low52week', noexception=True) }} - {{ stock.instant('high52week', noexception=True) }}</td>
-            <td>{{ stock.instant('marketCapital', noexception=True) }}</td>
-            <td>{{ stock.instant('pe_lyr', noexception=True) }}/{{ stock.instant('pe_ttm', noexception=True) }}</td>
-            <td>{{ stock.instant('volume', noexception=True) }}</td>
-            <td>{{ stock.instant('amount', noexception=True) }}</td>
-            <td><a class="link" target="_blank" href="http://xueqiu.com/S/{{ stock.symbol }}">雪</a></td>
-        </tr>
-        {% endfor %}
-        {% if record['repeat_new']|length > 0 %}
-        <tr>
-            <th colspan="13">再创新高</th>
-        </tr>
-        {% endif %}
-        {% for symbol in record['repeat_new'] %}
-        {% set stock=stock_dict[symbol] %}
-        <tr>
-            <th>{{ loop.index }}</th>
-            <td>{{ stock.symbol }}</td>
-            <td>{{ stock.name }}</td>
-            <td>{{ stock.instant('current', noexception=True) }}</td>
-            <td style="font-weight:bold;color:green;">{{ stock.instant('percentage', noexception=True) }}</td>
-            <td>{{ stock.instant('change', noexception=True) }}</td>
-            <td>{{ stock.instant('low', noexception=True) }} - {{ stock.instant('high', noexception=True) }}</td>
-            <td>{{ stock.instant('low52week', noexception=True) }} - {{ stock.instant('high52week', noexception=True) }}</td>
-            <td>{{ stock.instant('marketCapital', noexception=True) }}</td>
-            <td>{{ stock.instant('pe_lyr', noexception=True) }}/{{ stock.instant('pe_ttm', noexception=True) }}</td>
-            <td>{{ stock.instant('volume', noexception=True) }}</td>
-            <td>{{ stock.instant('amount', noexception=True) }}</td>
-            <td><a class="link" target="_blank" href="http://xueqiu.com/S/{{ stock.symbol }}">雪</a></td>
-        </tr>
-        {% endfor %}
+    {% for record in newlist %}
+    {% set stock=stock_dict[record['symbol']] %}
+    <tr>
+        <th>{{ loop.revindex }}</th>
+        <th>{{ record['time'].time() }}</th>
+        <td>{{ stock.symbol }}</td>
+        <td>{{ stock.name }}</td>
+        <td>{{ stock.instant('current', noexception=True) }}</td>
+        <td style="font-weight:bold;color:green;">{{ stock.instant('percentage', noexception=True) }}</td>
+        <td>{{ stock.instant('change', noexception=True) }}</td>
+        <td>{{ stock.instant('low', noexception=True) }} - {{ stock.instant('high', noexception=True) }}</td>
+        <td>{{ stock.instant('low52week', noexception=True) }} - {{ stock.instant('high52week', noexception=True) }}</td>
+        <td>{{ stock.instant('marketCapital', noexception=True) }}</td>
+        <td>{{ stock.instant('pe_lyr', noexception=True) }}/{{ stock.instant('pe_ttm', noexception=True) }}</td>
+        <td>{{ stock.instant('volume', noexception=True) }}</td>
+        <td>{{ stock.instant('amount', noexception=True) }}</td>
+        <td><a class="link" target="_blank" href="http://xueqiu.com/S/{{ stock.symbol }}">雪</a></td>
+    </tr>
+    {% endfor %}
+    <tr><th colspan="14">&nbsp;</th></tr>
+    <tr>
+        <th colspan="14">10天内再创新高&nbsp;
+<a href="{{ url_for('landscape') }}?display=graph&script=filter(%22:info::symbol%22,%22$inn%22,%22{{ repeatsymbols }}%22)">看K线</a>
+</th>
+    </tr>
+    {% for record in repeatlist %}
+    {% set stock=stock_dict[record['symbol']] %}
+    <tr>
+        <th>{{ loop.revindex }}</th>
+        <th>{{ record['time'].time() }}</th>
+        <td>{{ stock.symbol }}</td>
+        <td>{{ stock.name }}</td>
+        <td>{{ stock.instant('current', noexception=True) }}</td>
+        <td style="font-weight:bold;color:green;">{{ stock.instant('percentage', noexception=True) }}</td>
+        <td>{{ stock.instant('change', noexception=True) }}</td>
+        <td>{{ stock.instant('low', noexception=True) }} - {{ stock.instant('high', noexception=True) }}</td>
+        <td>{{ stock.instant('low52week', noexception=True) }} - {{ stock.instant('high52week', noexception=True) }}</td>
+        <td>{{ stock.instant('marketCapital', noexception=True) }}</td>
+        <td>{{ stock.instant('pe_lyr', noexception=True) }}/{{ stock.instant('pe_ttm', noexception=True) }}</td>
+        <td>{{ stock.instant('volume', noexception=True) }}</td>
+        <td>{{ stock.instant('amount', noexception=True) }}</td>
+        <td><a class="link" target="_blank" href="http://xueqiu.com/S/{{ stock.symbol }}">雪</a></td>
+    </tr>
     {% endfor %}
 </table>
 </div></div></div>

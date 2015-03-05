@@ -5,6 +5,8 @@ from optparse import OptionParser
 from api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
 from datetime import datetime
+from core.ticker import TradeCalendar
+from common.utils import gen_time
 
 # convert in-place
 def convert_str_to_number(doc, int_keys=[], float_keys=[]):
@@ -83,36 +85,67 @@ class XueqiuSyncer(object):
 
     # {"symbol":"SH000001", "time":"Mon Jan 13 00:00:00 +0800 2014", "volume":1.019157E7,"open":14.82,"high":15.35,"close":14.9,"low":14.51,"chg":0.0,"percent":0.0,"turnrate":1.52,"ma5":15.05,"ma10":15.13,"ma20":15.1,"ma30":15.66,"dif":-0.56,"dea":-0.71,"macd":0.3}
     # notice to create index for mongodb: db.xueqiu_k_day.ensureIndex({symbol:1, time:1},{unique:true, dropDups:true})
-    def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None):
+    def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None, forcecal=False):
         print 'Start syncing xueqiu k day...'
         total_updated = 0
         if symbols is None:
             symbols = self.get_normal_symbols()
             #symbols = [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}})]
 
-        latest_time = None
+        if end is None:
+            latest_date = TradeCalendar.get_latest_date_before(date.today())
+            latest_time = datetime(latest_date.year, latest_date.month, latest_date.day)
+        else:
+            latest_date = TradeCalendar.get_latest_date_before(end.date())
+            latest_time = datetime(latest_date.year, latest_date.month, latest_date.day)
+
         for (i, sym) in enumerate(symbols):
             updated = 0
-            if latest_time is not None:
-                stock_with_latest_time = self.db.xueqiu_k_day.find_one({'symbol': sym, 'time':latest_time})
-                if stock_with_latest_time:
-                    print 'stock %d: %s... already have it for latest date %s' % (i, sym, str(latest_time))
-                    continue # already has latest date for this symbol, no need to query it.
-            
-            ks = self.api.stock_k_day(sym, begin=begin, end=end)
-            if not ks:
-                print 'stock %d: %s... fetch failure' % (i, sym)
-                continue
-            latest_time = time_parse(ks[-1]['time'])
-            for k in ks:
-                k['time'] = time_parse(k['time'])
-                entry = self.db.xueqiu_k_day.find_one({'symbol':sym, 'time':k['time']})
-                k['symbol'] = sym
-                if not entry:
-                    self.db.xueqiu_k_day.insert(k)
-                    total_updated += 1
-                    updated += 1
-            print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(latest_time))
+            stock_with_latest_time = self.db.xueqiu_k_day.find_one({'symbol': sym, 'time':latest_time})
+            if stock_with_latest_time:
+                print 'stock %d: %s... already have it for latest date %s' % (i, sym, str(latest_time))
+                # already has latest date for this symbol, no need to query it.
+                if forcecal:
+                    pass
+                    # fetch the entry_list from database
+                    entry_list = list(self.db.xueqiu_k_day.find({'symbol':sym, 'time':{'$gte':begin, '$lte':end}}))
+            else:
+                entry_list = [] # for calculation work
+                ks = self.api.stock_k_day(sym, begin=begin, end=end)
+                if not ks:
+                    print 'stock %d: %s... fetch failure' % (i, sym)
+                    continue
+                real_latest_time = time_parse(ks[-1]['time'])
+                for k in ks:
+                    k['time'] = time_parse(k['time'])
+                    entry = self.db.xueqiu_k_day.find_one({'symbol':sym, 'time':k['time']})
+                    k['symbol'] = sym
+                    if not entry:
+                        self.db.xueqiu_k_day.insert(k)
+                        total_updated += 1
+                        updated += 1
+                        entry_list.append(k)
+                    else:
+                        entry_list.append(entry)
+                print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(real_latest_time))
+
+            #########################
+            # make calculations
+            #########################
+            if forcecal or not stock_with_latest_time:
+                high20_updated = 0
+                for j, entry in enumerate(entry_list):
+                    # high 20
+                    if j >= 20 and 'high20' not in entry:
+                        high = 0
+                        for k in range(j-20, j-1):
+                            if entry_list[k]['high'] > high:
+                                high = entry_list[k]['high']
+                        entry['high20'] = high
+                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'high20':high}})
+                        high20_updated += 1
+                print 'stock %d: %s... %d high20 updated' % (i, sym, high20_updated)
+                
             if self.gentle:
                 time.sleep(0.2)
         return total_updated
@@ -166,6 +199,7 @@ class XueqiuSyncer(object):
                 tmp_sym_list.append(sym)
         return updated
 
+# XXX mostly for temperary usage.
 def main():
     USAGE = """
     usage: python sync.py -l (sync basic info of a complete stock list)
@@ -200,7 +234,7 @@ def main():
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2012-01-01 00:00:00', end='2015-02-17 16:16:16')
+        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2012-01-01 00:00:00', end='2015-03-03 16:16:16')
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()
