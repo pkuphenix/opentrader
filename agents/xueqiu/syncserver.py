@@ -3,7 +3,7 @@ import os, sys
 from optparse import OptionParser
 from sync import XueqiuSyncer
 from api import XueqiuAPI, time_parse, current_tick
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from core.query import QuerySet
 from common.db import db_ot
@@ -48,14 +48,16 @@ def sync_list():
     begin = end - timedelta(days=1) # one day ago
     print now
     try:
-        syncer.sync_xueqiu_info()
+        pass
+        #syncer.sync_xueqiu_info()
     except:
         print 'error syncing xueqiu info'
         raise
 
     try:
-        sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
-        syncer.sync_xueqiu_k_day(begin=begin, end=end)
+        #syncer.sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
+        #syncer.sync_xueqiu_k_day(begin=begin, end=end) # this won't calculate anything
+        syncer.sync_xueqiu_k_day(begin='2014-01-01 00:00:00', end=end, forcecal=True)
     except:
         print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
         raise

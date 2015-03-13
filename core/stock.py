@@ -26,7 +26,10 @@ class Stock(object):
         today = self.ticker.now.date()
         today = datetime(today.year, today.month, today.day)
         if instant is None and initialized == False:
-            self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol, 'date':{'$lte':today}}).sort('date', -1)[0]
+            try:
+                self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol, 'date':{'$lte':today}}).sort('date', -1)[0]
+            except IndexError:
+                self._latest_instant = None
         else:
             self._latest_instant = instant
     
@@ -57,7 +60,10 @@ class Stock(object):
     # returns (price, last_update_time)
     @property
     def latest_price(self):
-        return (self.instant('current'), self.instant('time'))
+        try:
+            return (self.instant('current'), self.instant('time'))
+        except StockDataNotExist:
+            return (0, datetime.now())
 
     def atr(self, length):
         result = db_ot.xueqiu_k_day.find({'symbol':self.symbol}).sort('time', pymongo.DESCENDING).limit(length+1)

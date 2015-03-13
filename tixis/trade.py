@@ -10,11 +10,11 @@ class Trade(TixisModel):
     _fields = [
         OIDField(name="program", optional=False),
         CharField(name="symbol", optional=False),
-        TimeField(name="buytime", optional=False),
-        PriceField(name="buyprice", optional=False),
-        PriceField(name="riskprice", optional=False),
-        UIntField(name="amount", optional=False),
-        PriceField(name="averagecost", optional=False),
+        TimeField(name="buytime", optional=True),
+        PriceField(name="buyprice", optional=True),
+        PriceField(name="riskprice", optional=True),
+        UIntField(name="amount", optional=True),
+        PriceField(name="averagecost", optional=True),
 
         # for ended trades
         EnumField(name="status", values=('watch','running', 'ended'), optional=False, default="running"),
@@ -67,7 +67,12 @@ def trade_list(pid):
     running_trades = Trade.find({'program':ObjectId(pid), 'status':'running'})
     running_symbols = ':'.join([trade.symbol for trade in running_trades])
     ended_trades = Trade.find({'program':ObjectId(pid), 'status':'ended'})
-    return render_template('trade_list.html', prog=prog, running_trades=running_trades, ended_trades=ended_trades, running_symbols=running_symbols)
+    ended_symbols = ':'.join([trade.symbol for trade in ended_trades])
+    watch_trades = Trade.find({'program':ObjectId(pid), 'status':'watch'})
+    watch_symbols = ':'.join([trade.symbol for trade in watch_trades])
+    return render_template('trade_list.html', prog=prog, 
+                           running_trades=running_trades, ended_trades=ended_trades, watch_trades=watch_trades,
+                           running_symbols=running_symbols, ended_symbols=ended_symbols, watch_symbols=watch_symbols)
 
 @app.route("/program/<pid>/addtrade", methods=['POST','GET'])
 def trade_add(pid):
@@ -78,6 +83,10 @@ def trade_add(pid):
             abort(404)
         return render_template('trade_add.html', prog=prog, error_show='hidden')
     elif request.method == 'POST':
+        try:
+            prog = Program(pid)
+        except KeyError:
+            abort(404)
         new_trade = {
             'program': pid,
             'symbol': request.form['symbol'],
@@ -94,7 +103,7 @@ def trade_add(pid):
         try:
             tr = Trade.new(**new_trade)
         except ValidationError, e:
-            return render_template('trade_add.html', error_show='', error_msg=str(e))
+            return render_template('trade_add.html', error_show='', error_msg=str(e), prog=prog)
         return redirect(url_for('program_detail', oid=pid))
 
 @app.route("/program/<pid>/edittrade/<tid>", methods=['POST','GET'])
