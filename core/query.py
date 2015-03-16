@@ -155,6 +155,39 @@ class QuerySet(object):
                 stocks[each.symbol] = each
         return QuerySet(stocks.values())
 
+    @staticmethod
+    def plus(vala, valb):
+        def inner(stock):
+            a = parse_ref_val(vala, stock)
+            b = parse_ref_val(valb, stock)
+            return float(a)+float(b)
+        return inner
+
+    @staticmethod
+    def minus(vala, valb):
+        def inner(stock):
+            a = parse_ref_val(vala, stock)
+            b = parse_ref_val(valb, stock)
+            return float(a)-float(b)
+        return inner
+
+    @staticmethod
+    def mul(vala, valb):
+        def inner(stock):
+            a = parse_ref_val(vala, stock)
+            b = parse_ref_val(valb, stock)
+            return float(a)*float(b)
+        return inner
+
+    @staticmethod
+    def div(vala, valb):
+        def inner(stock):
+            a = parse_ref_val(vala, stock)
+            b = parse_ref_val(valb, stock)
+            return float(a)/float(b)
+        return inner
+
+
 
 class TestQuerySet(object):
     def test_all(self):

@@ -22,7 +22,7 @@ class OTLexer:
 
     # Tokens
     t_METHOD = r'filter|orderby|groupby|limit'
-    t_FUNCTION = r'merge'
+    t_FUNCTION = r'merge|plus|minus|mul|div'
 
     def t_NUMBER(self, t):
         r'-?\d+(\.\d+)?'
