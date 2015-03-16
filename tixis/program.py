@@ -2,10 +2,12 @@ from tixis import app
 from flask import request, render_template, url_for, redirect, abort
 from bson.objectid import ObjectId
 from tixis.model import *
+from tixis.session import getuser
 
 class Program(TixisModel):
     _collection_name = 'programs'
     _fields = [
+        CharField(name="user", default='qianli'),
         CharField(name="name", unique=True),
         CharField(name="desc"),
         EnumField(name="target_type", values=('percent', 'amount')),
@@ -15,6 +17,10 @@ class Program(TixisModel):
 
 @app.route("/program/add", methods=['POST','GET'])
 def program_add():
+    user = getuser()
+    if not user:
+        return redirect(url_for('login'))
+
     if request.method == 'GET':
         return render_template('program_add.html', error_show='hidden')
     elif request.method == 'POST':
@@ -32,15 +38,23 @@ def program_add():
 
 @app.route("/program/<oid>")
 def program_detail(oid):
+    user = getuser()
+    if not user:
+        return redirect(url_for('login'))
     try:
         prog = Program(oid)
     except KeyError:
         abort(404)
+    if prog.user != user:
+        return 'You don\'t have access to this program.'
     return render_template('program_detail.html', prog=prog)
 
 @app.route("/programs/")
 def program_list():
-    progs = Program.list()
+    user = getuser()
+    if not user:
+        return redirect(url_for('login'))
+    progs = Program.find({'user':user})
     return render_template('program_list.html', progs=progs)
 
 

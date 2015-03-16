@@ -6,10 +6,11 @@ import program
 import trade
 import landscape
 import utils
+import session
 
 @app.route("/")
-def hello():
-    return "Hello Worl1d!"
+def index():
+    return redirect(url_for('program_list'))
 
 
 

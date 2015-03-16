@@ -60,6 +60,9 @@ class Trade(TixisModel):
 
 @app.route("/program/<pid>/trades")
 def trade_list(pid):
+    user = getuser()
+    if not user:
+        return redirect(url_for('login'))
     try:
         prog = Program(pid)
     except KeyError:
@@ -76,6 +79,9 @@ def trade_list(pid):
 
 @app.route("/program/<pid>/addtrade", methods=['POST','GET'])
 def trade_add(pid):
+    user = getuser()
+    if not user:
+        return redirect(url_for('login'))
     if request.method == 'GET':
         try:
             prog = Program(pid)
@@ -108,6 +114,9 @@ def trade_add(pid):
 
 @app.route("/program/<pid>/edittrade/<tid>", methods=['POST','GET'])
 def trade_edit(pid, tid):
+    user = getuser()
+    if not user:
+        return redirect(url_for('login'))
     try:
         prog = Program(pid)
     except KeyError:

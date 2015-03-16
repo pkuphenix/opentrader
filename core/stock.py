@@ -3,8 +3,8 @@
 from common.db import db_ot
 import pymongo
 from datetime import datetime
-from core.ticker import Ticker, RT
-from common.utils import gen_time
+from core.ticker import Ticker, RT, TradeCalendar
+from common.utils import gen_time, gen_date
 
 class StockDataNotExist(Exception):
     pass
@@ -46,16 +46,27 @@ class Stock(object):
             return self._info.get(key, None)
 
     def instant(self, key=None, noexception=False):
-        if self._latest_instant is None:
-            if noexception:
-                return None
+        # realtime mode
+        if self.ticker is RT:
+            if self._latest_instant is None:
+                if noexception:
+                    return None
+                else:
+                    raise StockDataNotExist('instant info query error')
+            if key is None:
+                return self._latest_instant
             else:
-                raise StockDataNotExist('instant info query error')
-
-        if key is None:
-            return self._latest_instant
+                return self._latest_instant.get(key, None)
+        # history testing mode
         else:
-            return self._latest_instant.get(key, None)
+            fake_instant = dict(self.kday())
+            fake_instant['current'] = fake_instant['close'] # use kday close as current
+            # XXX may use more complex fake "current" curve: open -> high -> low -> close
+            if key is None:
+                return fake_instant
+            else:
+                return fake_instant.get(key, None)
+
 
     # returns (price, last_update_time)
     @property
@@ -82,8 +93,36 @@ class Stock(object):
             i += 1
         return round(float(TRs)/float(len(result)-1), 2)
 
-    def kday(self, date):
-        pass
+    def kday(self, date='today', bias=0):
+        if date == 'today':
+            date = self.ticker.now.date()
+        elif type(date) in (str,unicode):
+            date = gen_date(date)
+        if not TradeCalendar.check_date(date):
+            raise KeyError('The date %s is not a valid trading date' % str(date))
+
+        date_datetime = datetime(date.year, date.month, date.day)
+        if bias == 0:
+            result = db_ot.xueqiu_k_day.find_one({'symbol':self.symbol, 'time':date_datetime})#.sort('time', pymongo.DESCENDING).limit(length+1)
+            if not result:
+                raise StockDataNotExist('k_day not found for date %s, bias %d' % (date, bias))
+            else:
+                return result
+        elif bias < 0:
+            result = db_ot.xueqiu_k_day.find({'symbol':self.symbol, 'time':{'$lt':date_datetime}}).sort('time', pymongo.DESCENDING).limit(abs(bias))
+            result = list(result)
+            if len(result) < abs(bias):
+                raise StockDataNotExist('k_day not found for date %s, bias %d' % (date, bias))
+            else:
+                return result[abs(bias)-1]
+        else: # bias > 0
+            result = db_ot.xueqiu_k_day.find({'symbol':self.symbol, 'time':{'$gt':date_datetime}}).sort('time', pymongo.ASCENDING).limit(bias)
+            result = list(result)
+            if len(result) < abs(bias):
+                raise StockDataNotExist('k_day not found for date %s, bias %d' % (date, bias))
+            else:
+                return result[bias-1]
+
 
     def __str__(self):
         return self.symbol
@@ -105,6 +144,10 @@ class TestStock(object):
         assert s.name == u'万向钱潮'
         assert s.symbol == 'SZ000559'
 
+    def test_get_k_day(self):
+        s = Stock('SH600281')
+        assert s.kday('2015-03-13')['close'] == 6.85
+
     def test_get_instant_data(self):
         s = Stock('SZ000559')
         assert s.instant('current') == s.instant()['current']
@@ -112,13 +155,20 @@ class TestStock(object):
         assert s.instant('time') > datetime(2015, 2, 1)
 
         t = Ticker(begin=gen_time('2014-01-01 00:00:00'),
-                   end=gen_time('2014-01-02 23:00:00'))
+                   end=gen_time('2015-01-02 23:00:00'))
         s1 = Stock('SZ000559', ticker=t)
         def testrunner(e):
             print '%s: %s' % (e.name, str(e.source.now))
-            print s1.instant('time')
+
+        def testdayrunner(e):
+            try:
+                print s1.instant('time')
+            except StockDataNotExist, e:
+                print e
         
         t.subscribe('ticker-begin', testrunner)
+        t.subscribe('day-open', testdayrunner)
+        t.run()
 
         
         

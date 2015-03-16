@@ -7,7 +7,24 @@ from common.utils import gen_time
 class ValidationError(Exception):
     pass
 
+class TixisModelBase(type):
+    """
+    Metaclass for all models. As a meta class, all model classes are its instances. That is, the __new__ function would be triggered to create every model class based on its definition.
+    """
+    def __new__(cls, name, bases, attrs):
+        # find the _fields attribute and call each field's append_to_model function
+        _fields = attrs.get('_fields', [])
+        _field_dict = {}
+        for each_field in _fields:
+            _field_dict[each_field.name] = each_field
+        attrs['_field_dict'] = _field_dict
+        new_class = super(TixisModelBase, cls).__new__(cls, name, bases, attrs)
+        for each_field in _fields:
+            each_field.append_to_model(new_class)
+        return new_class
+
 class TixisModel(object):
+    __metaclass__ = TixisModelBase
     _collection_name = ''
     _fields = []
     @classmethod
@@ -100,9 +117,14 @@ class TixisModel(object):
             if each.name == fieldname:
                 return each.display(self.get().get(fieldname))
         return ''
+
+    @classmethod
+    def get_field(cls, fieldname):
+        return cls._field_dict.get(fieldname, None)
         
     def __getattr__(self, attr):
-        return self.get().get(attr)
+        field = self.__class__.get_field(attr)
+        return self.get().get(attr, field.default)
 
 
 class TixisField(object):
@@ -110,6 +132,9 @@ class TixisField(object):
         self.name = name
         self.optional = optional
         self.default = default
+
+    def append_to_model(self, model):
+        self.model = model
 
     def validate(self, val):
         return True
@@ -154,5 +179,24 @@ class TimeField(TixisField):
 class PriceField(TixisField):
     def standarlize(self, val):
         return round(float(val), 3)
+
+
+def test_model_base():
+    class TestModelProgram(TixisModel):
+        _collection_name = 'programs'
+        _fields = [
+            CharField(name="user", default='qianli'),
+            CharField(name="name", unique=True),
+            CharField(name="desc"),
+            EnumField(name="target_type", values=('percent', 'amount')),
+            UIntField(name="target_value"),
+        ]
+
+    f = TestModelProgram.get_field('user')
+    assert f.model == TestModelProgram
+    assert f.default == 'qianli'
+    ps = TestModelProgram.find({'user':'qianli'})
+    print ps[0].user
+
 
 

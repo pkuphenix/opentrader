@@ -286,13 +286,13 @@ def main():
         syncer.sync_xueqiu_info()
         end = datetime.now()
         begin = end - timedelta(days=1) # one day ago
-        sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
+        #sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
+        #syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
     # -a
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2012-01-01 00:00:00', end='2015-03-03 16:16:16')
+        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2014-01-01 00:00:00', end='2015-03-13 16:16:16')
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()
