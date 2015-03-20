@@ -27,7 +27,7 @@ class Stock(object):
         today = datetime(today.year, today.month, today.day)
         if instant is None and initialized == False:
             try:
-                self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol, 'date':{'$lte':today}}).sort('date', -1)[0]
+                self._latest_instant = db_ot.xueqiu_instant.find({'symbol':self.symbol, 'date':{'$lte':today}, 'current':{'$gt':0}}).sort('date', -1)[0]
             except IndexError:
                 self._latest_instant = None
         else:
@@ -101,6 +101,8 @@ class Stock(object):
         if not TradeCalendar.check_date(date):
             raise KeyError('The date %s is not a valid trading date' % str(date))
 
+        bias = int(bias)
+
         date_datetime = datetime(date.year, date.month, date.day)
         if bias == 0:
             result = db_ot.xueqiu_k_day.find_one({'symbol':self.symbol, 'time':date_datetime})#.sort('time', pymongo.DESCENDING).limit(length+1)
@@ -123,6 +125,37 @@ class Stock(object):
             else:
                 return result[bias-1]
 
+    def kdays(self, date='today', bias=0):
+        if date == 'today':
+            date = self.ticker.now.date()
+        elif type(date) in (str,unicode):
+            date = gen_date(date)
+        if not TradeCalendar.check_date(date):
+            raise KeyError('The date %s is not a valid trading date' % str(date))
+
+        bias = int(bias)
+
+        date_datetime = datetime(date.year, date.month, date.day)
+        if bias == 0:
+            result = db_ot.xueqiu_k_day.find_one({'symbol':self.symbol, 'time':date_datetime})#.sort('time', pymongo.DESCENDING).limit(length+1)
+            if not result:
+                raise StockDataNotExist('k_day not found for date %s, bias %d' % (date, bias))
+            else:
+                return [result]
+        elif bias < 0:
+            result = db_ot.xueqiu_k_day.find({'symbol':self.symbol, 'time':{'$lte':date_datetime}}).sort('time', pymongo.DESCENDING).limit(abs(bias)+1)
+            result = list(result)
+            if len(result) < abs(bias)+1:
+                raise StockDataNotExist('k_day not found for date %s, bias %d' % (date, bias))
+            else:
+                return result
+        else: # bias > 0
+            result = db_ot.xueqiu_k_day.find({'symbol':self.symbol, 'time':{'$gte':date_datetime}}).sort('time', pymongo.ASCENDING).limit(bias+1)
+            result = list(result)
+            if len(result) < abs(bias)+1:
+                raise StockDataNotExist('k_day not found for date %s, bias %d' % (date, bias))
+            else:
+                return result
 
     def __str__(self):
         return self.symbol
@@ -147,6 +180,7 @@ class TestStock(object):
     def test_get_k_day(self):
         s = Stock('SH600281')
         assert s.kday('2015-03-13')['close'] == 6.85
+        assert len(s.kdays('2015-03-13', -30)) == 31
 
     def test_get_instant_data(self):
         s = Stock('SZ000559')

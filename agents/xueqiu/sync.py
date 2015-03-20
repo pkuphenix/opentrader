@@ -111,7 +111,7 @@ class XueqiuSyncer(object):
     # {"symbol":"SH000001", "time":"Mon Jan 13 00:00:00 +0800 2014", "volume":1.019157E7,"open":14.82,"high":15.35,"close":14.9,"low":14.51,"chg":0.0,"percent":0.0,"turnrate":1.52,"ma5":15.05,"ma10":15.13,"ma20":15.1,"ma30":15.66,"dif":-0.56,"dea":-0.71,"macd":0.3}
     # notice to create index for mongodb: db.xueqiu_k_day.ensureIndex({symbol:1, time:1},{unique:true, dropDups:true})
     # begin, end: support both string or datetime
-    def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None, forcecal=False):
+    def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None, forcecal=False, forcefetch=False, skip=0):
         print 'Start syncing xueqiu k day...'
         # standarlize begin/end
         begin = standarlize_time(begin)
@@ -129,9 +129,11 @@ class XueqiuSyncer(object):
             latest_time = datetime(latest_date.year, latest_date.month, latest_date.day)
 
         for (i, sym) in enumerate(symbols):
+            if i < skip:
+                continue
             updated = 0
             stock_with_latest_time = self.db.xueqiu_k_day.find_one({'symbol': sym, 'time':latest_time})
-            if stock_with_latest_time:
+            if stock_with_latest_time and not forcefetch:
                 print 'stock %d: %s... already have it for latest date %s' % (i, sym, str(latest_time))
                 # already has latest date for this symbol, no need to query it.
                 if forcecal:
@@ -204,7 +206,7 @@ class XueqiuSyncer(object):
                 print 'stock %d: %s... %d high20 updated, %d high55 updated, %d atr20 updated' % (i, sym, high20_updated, high55_updated, atr20_updated)
                 
             if self.gentle:
-                time.sleep(0.2)
+                time.sleep(1)
         return total_updated
     """
     {"symbol":"SZ300059","exchange":"SZ","code":"300059","name":"东方财富","current":"41.25","percentage":"-5.56","change":"-2.430","open":"43.0","high":"44.0","low":"40.28","close":"0.0",
@@ -292,7 +294,7 @@ def main():
     elif options.all is not None:
         syncer = XueqiuSyncer()
         #syncer.sync_xueqiu_k_day(symbols=stocks)
-        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2014-01-01 00:00:00', end='2015-03-13 16:16:16')
+        syncer.sync_xueqiu_k_day(symbols=stocks, begin='2014-01-01 00:00:00', end='2015-03-16 16:16:16', forcefetch=True, forcecal=True, skip=0)
     # -i - should be run after 9:30 a.m., before 12:00 p.m. of every trading day.
     elif options.instant is not None:
         syncer = XueqiuSyncer()

@@ -4,6 +4,7 @@ from bson.objectid import ObjectId
 from tixis.model import *
 from tixis.program import Program
 from core.stock import Stock
+from tixis.session import getuser
 
 class Trade(TixisModel):
     _collection_name = 'trades'
@@ -73,7 +74,12 @@ def trade_list(pid):
     ended_symbols = ':'.join([trade.symbol for trade in ended_trades])
     watch_trades = Trade.find({'program':ObjectId(pid), 'status':'watch'})
     watch_symbols = ':'.join([trade.symbol for trade in watch_trades])
-    return render_template('trade_list.html', prog=prog, 
+    total_income = 0
+    for trade in running_trades:
+        total_income += trade.income
+    for trade in ended_trades:
+        total_income += trade.finalincome
+    return render_template('trade_list.html', prog=prog, total_income=total_income,
                            running_trades=running_trades, ended_trades=ended_trades, watch_trades=watch_trades,
                            running_symbols=running_symbols, ended_symbols=ended_symbols, watch_symbols=watch_symbols)
 

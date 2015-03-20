@@ -1,5 +1,6 @@
 <h3>进行中的交易：<a href="{{ url_for('trade_add', pid=prog.oid) }}"><i class="fa fa-plus-circle"></i></a></h3>
 <a href="{{ url_for('landscape') }}?display=graph&script=filter(%22:info::symbol%22,%22$inn%22,%22{{ running_symbols }}%22)">看K线</a>
+总收益:{{ total_income }}
 <table class="table table-hover">
     <tr>
         <th>股票</th>

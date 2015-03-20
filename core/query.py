@@ -15,7 +15,11 @@ def parse_ref_val(ref, stock):
             return getattr(stock, attr)(*args)
         else:
             try:
-                return getattr(stock, attr)(*args)[key]
+                res = getattr(stock, attr)(*args)
+                if type(res) is list:
+                    return [val[key] for val in res]
+                else:
+                    return res[key]
             except KeyError:
                 raise StockDataNotExist('Key does not exist: %s' % key)
     elif callable(ref):
@@ -184,10 +188,31 @@ class QuerySet(object):
         def inner(stock):
             a = parse_ref_val(vala, stock)
             b = parse_ref_val(valb, stock)
+            if float(b) == 0:
+                raise StockDataNotExist('division by zero')
             return float(a)/float(b)
         return inner
 
+    @staticmethod
+    def max(vals):
+        def inner(stock):
+            l = parse_ref_val(vals, stock)
+            return max(l)
+        return inner
 
+    @staticmethod
+    def min(vals):
+        def inner(stock):
+            l = parse_ref_val(vals, stock)
+            return min(l)
+        return inner
+
+    @staticmethod
+    def avr(vals):
+        def inner(stock):
+            l = parse_ref_val(vals, stock)
+            return reduce(lambda x, y: x + y, l) / float(len(l))
+        return inner
 
 class TestQuerySet(object):
     def test_all(self):
@@ -203,7 +228,9 @@ class TestQuerySet(object):
         assert all.run_script('filter(":info::symbol", "SZ002736")').count() == 1
         assert all.run_script('merge(filter(":info::symbol", "SZ002736"), filter(":info::symbol", "SZ002738"))').count() == 2
         assert all.run_script('filter(":instant::high52week", "$gt", 100).orderby(":info::current", "reverse")').count() < 50
-        print all.run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
+        #print all.run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
+        print all.run_script('filter(":kday|2015-03-13::atr20","$gt",0).orderby(div(":kday|2015-03-13::atr20",":instant::current")).limit(10)')
+        print all.run_script('filter(max(":kdays|2015-03-13|-30::volume"),"$lt",":instant::volume")')
         
         
 
