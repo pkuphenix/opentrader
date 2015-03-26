@@ -6,6 +6,7 @@ from api import XueqiuAPI, time_parse, current_tick
 from datetime import datetime, timedelta
 import time
 from core.query import QuerySet
+from core.ticker import RT
 from common.db import db_ot
 import pymongo
 from agents.xueqiu.newhigh import update_newhigh_52w
@@ -41,11 +42,11 @@ def sync_inst():
     #    print 'newhigh symbol list inserted: %s' % sym_list
 
 def sync_list():
-    syncer = XueqiuSyncer(gentle=True)
+    syncer = XueqiuSyncer(gentle=False)
     now = datetime.now()
     today = datetime(now.year, now.month, now.day)
     end = datetime.now()
-    begin = end - timedelta(days=1) # one day ago
+    begin = end - timedelta(days=10) # one day ago
     print now
     try:
         pass
@@ -57,7 +58,7 @@ def sync_list():
     try:
         #syncer.sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
         #syncer.sync_xueqiu_k_day(begin=begin, end=end) # this won't calculate anything
-        syncer.sync_xueqiu_k_day(begin='2014-01-01 00:00:00', end=end, forcecal=True)
+        syncer.sync_xueqiu_k_day(begin='2015-01-01 00:00:00', end=end, forcecal=True)#, skip=2476)
     except:
         print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
         raise
@@ -76,6 +77,7 @@ def main():
         sync_inst()
     if options.list == True:
         sync_list()
+    RT.stop()
 
 if __name__ == "__main__":
     main()

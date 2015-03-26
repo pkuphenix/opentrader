@@ -5,7 +5,7 @@ from optparse import OptionParser
 from api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-from core.ticker import TradeCalendar
+from core.ticker import TradeCalendar,RT
 from common.utils import gen_time, standarlize_time, gen_tick
 
 # convert in-place
@@ -305,6 +305,7 @@ def main():
         #syncer.sync_xueqiu_k_day(symbols=stocks, begin=begin, end=end)
     else:
         pass
+    RT.stop()
 
 
 
@@ -321,4 +322,5 @@ def test_xueqiu_k_day():
     syncer.sync_xueqiu_k_day(symbols=['SZ000025'], begin='2012-01-01 00:00:00', end='2015-03-05 00:00:00')
     assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-03-05 00:00:00")})[0]['high20'] == 16.18
     assert syncer.db.xueqiu_k_day.find({'symbol':'SZ000025', 'time':gen_time("2015-03-05 00:00:00")})[0]['atr20'] == 0.74
+    RT.stop()
 

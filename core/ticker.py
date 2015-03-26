@@ -251,6 +251,7 @@ class RealtimeTicker(Observable):
         return datetime.now() - self.now
 
 RT = RealtimeTicker()
+RT.run()
 
 def test_ticker():
     ticker = Ticker(begin=gen_time('2014-01-01 00:00:00'),
