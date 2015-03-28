@@ -1,7 +1,8 @@
 from script import *
-from stock import *
+from stock import Stock, StockDataNotExist
+from ticker import Ticker
 from common.db import db_ot
-from common.utils import Operator
+from common.utils import Operator,gen_time
 from datetime import datetime
 import time
 
@@ -126,28 +127,49 @@ class QuerySet(object):
     _cached_all = None
     _cached_all_time = time.time()
     @staticmethod
-    def all():
-        if time.time() - QuerySet._cached_all_time < 60 and QuerySet._cached_all is not None:
-            return QuerySet._cached_all
+    def all(ticker=None):
+        if ticker is None:
+            if time.time() - QuerySet._cached_all_time < 60 and QuerySet._cached_all is not None:
+                return QuerySet._cached_all
 
-        infos = [info for info in db_ot.xueqiu_info.find() if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE") or info['symbol'].startswith("SZ399"))]
-        today = datetime.today()
-        today = datetime(today.year, today.month, today.day)
-        instants = [instant for instant in db_ot.xueqiu_instant.find({'date':today})]
-        stocks = []
-        stock_instant_dict = {}
+            infos = [info for info in db_ot.xueqiu_info.find() if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE") or info['symbol'].startswith("SZ399"))]
+            today = datetime.today()
+            today = datetime(today.year, today.month, today.day)
+            instants = [instant for instant in db_ot.xueqiu_instant.find({'date':today})]
+            stocks = []
+            stock_instant_dict = {}
 
-        for each_instant in instants:
-            stock_instant_dict[each_instant['symbol']] = each_instant
+            for each_instant in instants:
+                stock_instant_dict[each_instant['symbol']] = each_instant
 
-        for each in infos:
-            stocks.append(Stock(each['symbol'], each, stock_instant_dict.get(each['symbol'], None), initialized=True))
-        
-        rtn = QuerySet(stocks)
-        QuerySet._cached_all_time = time.time()
-        QuerySet._cached_all = rtn
-        return rtn
+            for each in infos:
+                stocks.append(Stock(each['symbol'], each, stock_instant_dict.get(each['symbol'], None), initialized=True, ticker=ticker))
+            
+            rtn = QuerySet(stocks)
+            QuerySet._cached_all_time = time.time()
+            QuerySet._cached_all = rtn
+            return rtn
+        else:
+            today = datetime.today()
+            today = datetime(today.year, today.month, today.day)
+            infos = [info for info in db_ot.xueqiu_info.find() if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE") or info['symbol'].startswith("SZ399"))]
+            instants = [instant for instant in db_ot.xueqiu_instant.find({'date':today})]
+            stocks = []
+            stock_instant_dict = {}
+            stock_info_dict = {}
 
+            for each_info in infos:
+                stock_info_dict[each_info['symbol']] = each_info
+
+            for each_instant in instants:
+                stock_instant_dict[each_instant['symbol']] = each_instant
+
+            date = ticker.now.date()
+            kdays = [kday for kday in db_ot.xueqiu_k_day.find({'time':datetime(date.year,date.month,date.day)}) if not (info['symbol'].startswith("SH000") or info['symbol'].startswith("SH900") or info['symbol'].startswith("PRE") or info['symbol'].startswith("SZ399"))]
+            for each in kdays:
+                stocks.append(Stock(each['symbol'], stock_info_dict.get(each['symbol'], None), stock_instant_dict.get(each['symbol'], None), initialized=True, ticker=ticker))
+            rtn = QuerySet(stocks)
+            return rtn
 
     @staticmethod
     def merge(qsa, qsb):
@@ -229,8 +251,17 @@ class TestQuerySet(object):
         assert all.run_script('merge(filter(":info::symbol", "SZ002736"), filter(":info::symbol", "SZ002738"))').count() == 2
         assert all.run_script('filter(":instant::high52week", "$gt", 100).orderby(":info::current", "reverse")').count() < 50
         #print all.run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
-        print all.run_script('filter(":kday|2015-03-13::atr20","$gt",0).orderby(div(":kday|2015-03-13::atr20",":instant::current")).limit(10)')
-        print all.run_script('filter(max(":kdays|2015-03-13|-30::volume"),"$lt",":instant::volume")')
+        #print all.run_script('filter(":kday|2015-03-13::atr20","$gt",0).orderby(div(":kday|2015-03-13::atr20",":instant::current")).limit(10)')
+        #print all.run_script('filter(max(":kdays|2015-03-13|-30::volume"),"$lt",":instant::volume")')
         
+        
+        ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-02-01 00:00:00"))
+        def every_day_end(e):
+            print e.source.now
+            print QuerySet.all(ticker=ticker).run_script('filter(":kday|today|-1::percent","$gte",4).filter(":kday::percent","$lte",-9)')
+        ticker.subscribe('day-close', every_day_end)
+        ticker.run()
+        
+
         
 

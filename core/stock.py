@@ -104,6 +104,7 @@ class Stock(object):
         bias = int(bias)
 
         date_datetime = datetime(date.year, date.month, date.day)
+        #print 'calling kday for symbol %s, datetime %s' % (self.symbol, date_datetime)
         if bias == 0:
             result = db_ot.xueqiu_k_day.find_one({'symbol':self.symbol, 'time':date_datetime})#.sort('time', pymongo.DESCENDING).limit(length+1)
             if not result:
