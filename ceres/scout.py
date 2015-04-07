@@ -196,7 +196,7 @@ def tttest_probe():
     ticker.run()
 
 def test_filter_probe():
-    ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-03-09 00:00:00"))
+    ticker = Ticker(begin=gen_time("2013-01-01 00:00:00"), end=gen_time("2015-03-09 00:00:00"))
     def ticker_printer(e):
         print e.source.now.date()
     ticker.subscribe('day-close', ticker_printer)
