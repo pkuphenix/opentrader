@@ -79,3 +79,49 @@ class Observable(object):
         else:
             return len(self.callbacks[name])
             
+class AntiDupPool(object):
+    def __init__(self, size):
+        self.size = size
+        # initialize a ring queue
+        self.rq = {'next':None, 'objs':None}
+        p = self.rq
+        for i in range(self.size-1):
+            p['next'] = {'next':None, 'objs':None}
+            p = p['next']
+        p['next'] = self.rq
+        # initialize a hash
+        self.hash = {}
+
+    def filter(self, src):
+        # src must be a list
+        assert type(src) is list
+        # first filter out the result
+        res = []
+        for each in src:
+            if each in self.hash:
+                self.hash[each] += 1
+            else:
+                res.append(each)
+                self.hash[each] = 1
+
+        # then reset the ring queue
+        if self.rq['objs']:
+            for each in self.rq['objs']:
+                self.hash[each] -= 1
+                if self.hash[each] == 0:
+                    del self.hash[each]
+        self.rq['objs'] = src
+        self.rq = self.rq['next']
+
+        return res
+
+def test_AntiDupPool():
+    t = AntiDupPool(3)
+    assert t.filter([1,2,3]) == [1,2,3]
+    assert t.filter([2,3,4]) == [4]
+    assert t.filter([3,4,5]) == [5]
+    assert t.filter([4,5,6]) == [6] # overwrites [1,2,3]
+    assert t.filter([1,3,4,5,6,7]) == [1,7] # overwrites [2,3,4]
+    assert t.filter([1,2,7,8]) == [2,8]
+
+
