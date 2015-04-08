@@ -63,7 +63,6 @@ def test_newhigh55scout():
     def scout_fired(e):
         tom_date = TradeCalendar.get_date(e.time.date(),5)
         dr = probe.PercentRecorder('daily')
-        # get the percent of the second day
         for symbol in e.symbols:
             tomk0 = db_ot.xueqiu_k_day.find_one({'symbol':symbol,'time':datetime(e.time.date().year,e.time.date().month,e.time.date().day)})
             tomk = db_ot.xueqiu_k_day.find_one({'symbol':symbol,'time':datetime(tom_date.year,tom_date.month,tom_date.day)})
