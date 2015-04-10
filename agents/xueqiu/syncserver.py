@@ -56,9 +56,9 @@ def sync_list():
         raise
 
     try:
-        #syncer.sync_xueqiu_k_day_pure(symbols=['SH000001'], begin=begin, end=end)
+        syncer.sync_xueqiu_k_day_pure(symbols=['SH000001'], begin='2012-12-01 00:00:00', end=end)
         #syncer.sync_xueqiu_k_day(begin=begin, end=end) # this won't calculate anything
-        syncer.sync_xueqiu_k_day(begin='2015-01-01 00:00:00', end=end, forcecal=True, skip=0)
+        syncer.sync_xueqiu_k_day(begin='2012-12-01 00:00:00', end=end, forcecal=True)
     except:
         print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
         raise
