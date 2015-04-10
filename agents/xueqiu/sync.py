@@ -166,6 +166,9 @@ class XueqiuSyncer(object):
                 high20_updated = 0
                 high55_updated = 0
                 atr20_updated = 0
+                low5_updated = 0
+                low10_updated = 0
+                last_high55 = 0
                 for j, entry in enumerate(entry_list):
                     # high 20
                     if j >= 19 and 'high20' not in entry:
@@ -178,14 +181,35 @@ class XueqiuSyncer(object):
                         high20_updated += 1
 
                     # high 55
-                    if j >= 54 and 'high55' not in entry:
+                    if j >= 54 and 'high55_last' not in entry:
                         high = 0
                         for k in range(j-54, j+1): # notice this range is from j-54 to j
                             if entry_list[k]['high'] > high:
                                 high = entry_list[k]['high']
                         entry['high55'] = high
-                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'high55':high}})
+                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'high55':high,'high55_last':last_high55}})
                         high55_updated += 1
+                        last_high55 = high
+
+                    # low 5
+                    if j >= 4 and 'low5' not in entry:
+                        low = entry_list[j-4]['low']
+                        for k in range(j-4, j+1):
+                            if entry_list[k]['low'] < low:
+                                low = entry_list[k]['low']
+                        entry['low5'] = low
+                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'low5':low}})
+                        low5_updated += 1
+
+                    # low 10
+                    if j >= 9 and 'low10' not in entry:
+                        low = entry_list[j-9]['low']
+                        for k in range(j-9, j+1):
+                            if entry_list[k]['low'] < low:
+                                low = entry_list[k]['low']
+                        entry['low10'] = low
+                        self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'low10':low}})
+                        low10_updated += 1
                     
                     # atr 20
                     if j >= 19 and 'atr20' not in entry:
@@ -203,7 +227,7 @@ class XueqiuSyncer(object):
                         self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'atr20':entry['atr20']}})
                         atr20_updated += 1
 
-                print 'stock %d: %s... %d high20 updated, %d high55 updated, %d atr20 updated' % (i, sym, high20_updated, high55_updated, atr20_updated)
+                print 'stock %d: %s... %d high20 updated, %d high55 updated, %d atr20 updated, %d low5 updated, %d low10 updated' % (i, sym, high20_updated, high55_updated, atr20_updated, low5_updated, low10_updated)
                 
             if self.gentle:
                 time.sleep(1)

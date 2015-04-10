@@ -133,7 +133,7 @@ class Newhigh55Probe(Probe):
         time = ticker_event.source.now
         date = time.date()
         if self.entry_auto_all:
-            res = db_ot.xueqiu_k_day.find({'time':datetime(date.year, date.month, date.day), '$where':'this.high>=this.high55'})
+            res = db_ot.xueqiu_k_day.find({'time':datetime(date.year, date.month, date.day), '$where':'this.close>this.high55_last'})
         if res:
             symbols = []
             for each in res:
@@ -151,7 +151,7 @@ class PercentRecorder(object):
 
     def eat_ignore(self):
         self.ignore -= 1
-        
+
     def record(self, percent):
         if self.ignore > 0:
             return
