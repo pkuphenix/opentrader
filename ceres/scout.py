@@ -52,7 +52,7 @@ class Newhigh55Scout(Scout):
 
 
 def test_newhigh55scout():
-    ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-03-01 00:00:00"))
+    ticker = Ticker(begin=gen_time("2013-01-01 00:00:00"), end=gen_time("2015-03-01 00:00:00"))
     s = Newhigh55Scout()
     def ticker_printer(e):
         print e.source.now.date()
