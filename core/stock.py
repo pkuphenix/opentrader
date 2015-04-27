@@ -158,6 +158,11 @@ class Stock(object):
             else:
                 return result
 
+    def madistant(self, *args):
+        kday = self.kday(*args)
+        dist = max(kday['ma5'],kday['ma10'],kday['ma20'],kday['ma30']) - min(kday['ma5'],kday['ma10'],kday['ma20'],kday['ma30'])
+        return dist / kday['close']
+
     def __str__(self):
         return self.symbol
 
