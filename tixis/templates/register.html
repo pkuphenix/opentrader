@@ -15,6 +15,9 @@
     <script src="/static/js/bootstrap-switch.min.js"></script>
 </head>
 <body>
+    <div class="alert alert-success" role="alert" style="display: none">Register Successfully</div>
+    <div class="alert alert-warning" role="alert" style="display: none">Warning</div>  <!-- Better replace Warning with specific messages-->
+    <div class="alert alert-danger" role="alert" style="display: none">Error!</div>    <!-- Same as above-->
     <div class="container-fluid"><div class="row"><div class="col-md-offset-4 col-md-4">
 	<div class="panel panel-primary">
 	    <div class="panel-heading">
@@ -35,10 +38,36 @@
 			<input type="password" class="form-control" id="password-confirmation" placeholder="">
 		    </div>
 		    <center>
-			<button type="submit" class="btn btn-primary">提交</button>
+			<button type="submit" class="btn btn-primary" id="submit">提交</button>
 		    </center>
 		</form>
 	    </div>
 	</div>
     </div></div></div>
+    <script>
+    	$("#submit").on("click", function(){
+    		var username = $("#username").val();
+    		var password = $("#password").val();
+    		var new_password = $("#password-confirmation").val();
+    		if ( username === 0 || password === 0 || new_password === 0){
+    			$(".alert-danger").html("Register failed, fields shouldn't be empty");
+    		} if ( password != new_password) {
+    			$(".alert-warning").html("Passwords are different");
+    		} else{
+    			var data = JSON.stringify({
+    				"username": username,
+    				"password": password
+    			});
+    			
+    			$.ajax({
+    				type: "POST",
+    				url: "",   //Unknown yet
+    				contentType: "application/json",
+    				data: data,
+    				dataType: "json",
+    				success:  //To be edited
+    			});
+    		}
+    	})
+    </script>
 </body>
