@@ -33,11 +33,33 @@
               <input type="password" class="form-control" name="password" id="password" placeholder="">
             </div>
             <center>
-            <button type="submit" class="btn btn-primary">登陆</button>
+            <button type="submit" class="btn btn-primary" id="login">登陆</button>
             <a class="btn btn-primary" href="" role="button">注册</a>
             </center>
           </form>
       </div>
   </div>
   </div></div></div>
+  <script>
+      $("#login").on("click", function(){
+          var username = $("#username").val();
+          var password = $("#password").val();
+          if (username.length() === 0 || password.length() === 0){
+              $(".alert-danger").html("Please enter uesrname and password");
+          } else {
+              var data = JSON.stringfy({
+                  "username": username,
+                  "password": password
+              })
+              $.ajax({
+                  type: "POST",
+                  data: data,
+                  url: "",   //Unknown yet
+                  contentType: "application\json",
+                  dataType: "json",
+                  success:  //To be edited
+              })
+          }
+      })
+  </script>
 </body>
