@@ -1,8 +1,8 @@
-from tixis import app
+from opentrader.tixis import app
 from flask import request, render_template, url_for, redirect
-from common.db import db_tixis
+from opentrader.common.db import db_tixis
 from bson.objectid import ObjectId
-from common.utils import gen_time
+from opentrader.common.utils import gen_time
 
 class ValidationError(Exception):
     pass
@@ -196,7 +196,7 @@ def test_model_base():
     assert f.model == TestModelProgram
     assert f.default == 'qianli'
     ps = TestModelProgram.find({'user':'qianli'})
-    print ps[0].user
+    print(ps[0].user)
 
 
 

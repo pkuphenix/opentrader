@@ -1,5 +1,5 @@
-from common.utils import gen_time, Observable
-from common.db import db_ot
+from opentrader.common.utils import gen_time, Observable
+from opentrader.common.db import db_ot
 from datetime import datetime, timedelta, date, time as daytime
 import time, threading
 
@@ -257,7 +257,7 @@ def test_ticker():
     ticker = Ticker(begin=gen_time('2014-01-01 00:00:00'),
                     end=gen_time('2014-12-31 23:00:00'))
     def testrunner(e):
-        print '%s: %s' % (e.name, str(e.source.now))
+        print('%s: %s' % (e.name, str(e.source.now)))
         
     ticker.subscribe('ticker-begin', testrunner)
     ticker.subscribe('ticker-end', testrunner)
@@ -270,8 +270,8 @@ def test_realtime_ticker():
     rt.run()
     i = 0
     while i < 10:
-        print rt.now
-        print rt.bias
+        print(rt.now)
+        print(rt.bias)
         time.sleep(1)
         i += 1
     rt.stop()

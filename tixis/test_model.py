@@ -1,6 +1,6 @@
 import pytest
-from common.db import db
-from program import Program
+from opentrader.common.db import db
+from opentrader.program import Program
 
 def test_program():
     Program.remove()

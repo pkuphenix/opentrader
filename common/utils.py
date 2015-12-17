@@ -1,5 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 import time
+
+def d2dt(date, hour=0):
+    return datetime(date.year, date.month, date.day, hour)
 
 # str_time: "2010-06-04 21:08:12"
 def gen_time(str_time):
@@ -8,7 +11,7 @@ def gen_time(str_time):
 def standarlize_time(str_time):
     if str_time is None:
         return None
-    if type(str_time) in (str, unicode):
+    if type(str_time) in (str, str):
         return datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
     else:
         assert type(str_time) is datetime
@@ -67,7 +70,7 @@ class Observable(object):
 
     def fire(self, name, **attrs):
         e = Event(self, name)
-        for k, v in attrs.iteritems():
+        for k, v in list(attrs.items()):
             setattr(e, k, v)
         if name in self.callbacks:
             for fn in self.callbacks[name]:

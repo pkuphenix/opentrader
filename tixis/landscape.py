@@ -1,13 +1,12 @@
-from tixis import app
+from opentrader.tixis import app
 from flask import Flask, request, render_template, url_for, redirect
-from core.query import QuerySet
-from core.stock import Stock
-from urllib import unquote
-from common.db import db_ot
+from opentrader.core.query import QuerySet
+from opentrader.core.stock import Stock
+from opentrader.common.db import db_ot
 import pymongo
-from agents.xueqiu.newhigh import *
+from opentrader.agents.xueqiu.newhigh import *
 from datetime import date
-from common.utils import gen_date
+from opentrader.common.utils import gen_date
 
 @app.route("/landscape/")
 def landscape():

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pick It Up!</title>
+    <script src="jquery-1.11.3.min.js"></script>
+    <script src="http://cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <link href="http://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap-theme.min.css" rel="stylesheet">
+</head>
+<body>
+    <h4>ETF&nbsp;&nbsp;</h4><span id="etf_update_time"></span>
+    <table id="etf_table" class="table table-hover">
+    </table>
+</body>
+<script type="text/javascript">
+/*************/
+/* ETF Table */
+/*************/
+var caring_ids = ["510050","159919","510300","159922","510500","159915"];
+var cols = ["fund_id",
+            "fund_nm",
+            "price",
+            "increase_rt",
+            "volume",
+            "index_nm",
+            "index_increase_rt",
+            "estimate_value",
+            "fund_nav",
+            "nav_dt",
+            "discount_rt"
+            ];
+            //"last_est_time","last_time"
+var col_names = ["代码",
+                "名称",
+                "现价",
+                "涨幅",
+                "成交金额",
+                "指数",
+                "指数涨幅",
+                "估值",
+                "净值",
+                "净值日期",
+                "折价率"
+                ];
+var th_ele = $("<tr></tr>");
+for (var i=0; i<cols.length; i++) {
+    th_ele.append($("<th>"+col_names[i]+"</th>"));
+} 
+$("#etf_table").append(th_ele);
+var update_etf = function(){
+    var t = new Date();
+    $.ajax({
+        url: "http://www.jisilu.cn/jisiludata/etf.php?___t="+t.getTime(),
+        type: "GET",
+        success: function(data){
+            var etf_data = $.parseJSON(data);
+            $("#etf_table").find(".data_row").remove();
+            for (var j=0; j<caring_ids.length; j++) {
+                console.log(caring_ids[j]);
+                $.each(etf_data.rows, function(k, v){
+                    if (v.id == caring_ids[j]) {
+                        var tr_ele = $("<tr class=\"data_row\"></tr>");
+                        for (var i=0; i<cols.length; i++) {
+                            tr_ele.append($("<td>"+v.cell[cols[i]]+"</td>"));
+                        }
+                        tr_ele.appendTo("#etf_table");
+                        //$("#etf_table").append(tr_ele);
+                    }
+                });
+            }
+            var d = new Date();
+            $("#etf_update_time").html(d.toLocaleString());
+        }
+    });
+}
+update_etf();
+setInterval(update_etf, 5000);
+
+/***************/
+/* fenji Table */
+/***************/
+</script>
+</html>

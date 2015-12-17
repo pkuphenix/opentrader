@@ -1,25 +1,25 @@
 #!/usr/bin/python
 import os, sys
 from optparse import OptionParser
-from sync import XueqiuSyncer
-from api import XueqiuAPI, time_parse, current_tick
+from opentrader.agents.xueqiu.sync import XueqiuSyncer
+from opentrader.agents.xueqiu.api import XueqiuAPI, time_parse, current_tick
 from datetime import datetime, timedelta
 import time
 from core.query import QuerySet
 from core.ticker import RT
 from common.db import db_ot
 import pymongo
-from agents.xueqiu.newhigh import update_newhigh_52w
+from opentrader.agents.xueqiu.newhigh import update_newhigh_52w
 
 def sync_inst():
     syncer = XueqiuSyncer()
     now = datetime.now()
     today = datetime(now.year, now.month, now.day)
-    print now
+    print(now)
     try:
         syncer.sync_xueqiu_instant()
     except:
-        print 'error syncing xueqiu instant'
+        print('error syncing xueqiu instant')
         raise
     #####################
     # Policy New High
@@ -27,7 +27,7 @@ def sync_inst():
     try:
         update_newhigh_52w()
     except:
-        print 'error updating 52week new high'
+        print('error updating 52week new high')
         raise
     #q = QuerySet.all().run_script('filter(":instant::high","$gte",":instant::high52week").orderby(":instant::symbol")')
     #sym_list = [s.symbol for s in q.stocks]
@@ -47,20 +47,20 @@ def sync_list():
     today = datetime(now.year, now.month, now.day)
     end = datetime.now()
     begin = end - timedelta(days=10) # one day ago
-    print now
+    print(now)
     try:
         pass
         #syncer.sync_xueqiu_info()
     except:
-        print 'error syncing xueqiu info'
+        print('error syncing xueqiu info')
         raise
 
     try:
         syncer.sync_xueqiu_k_day_pure(symbols=['SH000001'], begin='2012-12-01 00:00:00', end=end)
         #syncer.sync_xueqiu_k_day(begin=begin, end=end) # this won't calculate anything
-        syncer.sync_xueqiu_k_day(begin='2015-01-01 00:00:00', end=end, forcecal=True)
+        syncer.sync_xueqiu_k_day(begin='2012-01-01 00:00:00', end=end, forcecal=False)
     except:
-        print 'error syncing xueqiu k day from %s to %s' % (str(begin), str(end))
+        print('error syncing xueqiu k day from %s to %s' % (str(begin), str(end)))
         raise
             
 def main():

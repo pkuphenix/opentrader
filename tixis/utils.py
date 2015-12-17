@@ -1,8 +1,8 @@
-from tixis import app
+from opentrader.tixis import app
 from flask import request, render_template, url_for, redirect, abort
 from bson.objectid import ObjectId
-from tixis.model import *
-from agents.xueqiu.api import XueqiuAPI
+from opentrader.tixis.model import *
+from opentrader.agents.xueqiu.api import XueqiuAPI
 
 @app.route("/utils/captcha", methods=['POST','GET'])
 def captcha_hack():

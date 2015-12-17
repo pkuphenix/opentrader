@@ -36,11 +36,11 @@ class Probe(Observable):
     @property
     def alive_entries(self):
         rtn = OrderedDict() # a copy of alive entries
-        for symbol, attr in self.entries.iteritems():
+        for symbol, attr in self.entries.items():
             if 'end' in attr and self.ticker.now >= attr['end']:
                 del self.entries[symbol]
 
-        for symbol, attr in self.entries.iteritems():
+        for symbol, attr in self.entries.items():
             if 'start' in attr:
                 if self.ticker.now >= attr['start']:
                     rtn[symbol] = attr
@@ -101,7 +101,7 @@ class PercentProbe(Probe):
                 self.fire('probe-detect', symbols=symbols, time=time)
         else:
             symbols = []
-            for symbol,attr in entries.iteritems():
+            for symbol,attr in entries.items():
                 #print symbol,attr
                 res = db_ot.xueqiu_k_day.find_one({'symbol':symbol, 'time':datetime(date.year, date.month, date.day), 'percent':{self.operation:self.waterline}})
                 if res:
@@ -160,21 +160,21 @@ class PercentRecorder(object):
 
     def show(self):
         if self.count > 0:
-            print '%s - recording result: total count %u, average %f' % (self.name, self.count, self.sum/self.count)
+            print('%s - recording result: total count %u, average %f' % (self.name, self.count, self.sum/self.count))
         else:
-            print '%s - no records' % (self.name)
+            print('%s - no records' % (self.name))
 
 def atest_probe():
     ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-03-01 00:00:00"))
     def ticker_printer(e):
-        print e.source.now.date()
+        print(e.source.now.date())
     ticker.subscribe('day-close', ticker_printer)
 
     # First probe -- percent > 9
     p = PercentProbe(4)
     p.bind_ticker(ticker)
     def probe_detected(e):
-        print e.symbols, e.time
+        print(e.symbols, e.time)
     p.set_entry_auto_all(autoquery=False)
     #p.subscribe('probe-detect', probe_detected)
 
@@ -189,7 +189,7 @@ def atest_probe():
 def test_filter_probe():
     ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-03-09 00:00:00"))
     def ticker_printer(e):
-        print e.source.now.date()
+        print(e.source.now.date())
     ticker.subscribe('day-close', ticker_printer)
     p = FilterProbe(script='filter(":kday::high","$gte",":kday::high55").filter(":kday::volume","$gte",mul(":kday|today|-1::volume",2))')
     #p = FilterProbe(script='filter(":kday|today|-2::percent","$gte",9).filter(":kday|today|-1::high","$gt",":kday|today|-1::close").filter(":kday|today|-1::open","$gt",":kday|today|-1::low").filter(":kday|today|-1::percent","$gt",0).filter(":kday::close","$gte",":kday|today|-1::high")')
@@ -218,13 +218,13 @@ def test_filter_probe():
 def atest_high55_probe():
     ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-03-01 00:00:00"))
     def ticker_printer(e):
-        print e.source.now.date()
+        print(e.source.now.date())
     ticker.subscribe('day-close', ticker_printer)
 
     p = Newhigh55Probe()
     p.bind_ticker(ticker)
     def probe_detected(e):
-        print e.symbols, e.time
+        print(e.symbols, e.time)
     p.set_entry_auto_all(autoquery=False)
     p.subscribe('probe-detect', probe_detected)
     ticker.run()

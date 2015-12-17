@@ -41,7 +41,7 @@ class OTLexer:
         t.lexer.lineno += t.value.count("\n")
         
     def t_error(self, t):
-        print("Illegal character '%s'" % t.value[0])
+        print(("Illegal character '%s'" % t.value[0]))
         t.lexer.skip(1)
 
     # Build the lexer
@@ -54,7 +54,7 @@ class OTLexer:
         while True:
              tok = self.lexer.token()
              if not tok: break
-             print tok
+             print(tok)
 
     def __init__(self):
         self.base_obj = None
@@ -125,7 +125,7 @@ class OTYacc:
 
     def p_error(self, p):  
         if p:
-            print("Syntax error at '%s'" % p.value)  
+            print(("Syntax error at '%s'" % p.value))  
         else:
             print("Syntax error at EOF")  
 
@@ -145,12 +145,12 @@ class OTYacc:
 
     @classmethod
     def filter(cls, a, b): # just for local test
-        print a+b
+        print(a+b)
         return cls
 
     @staticmethod
     def merge(a): # just for local test
-        print a
+        print(a)
 
 if __name__ == "__main__":
     parser = OTYacc(OTYacc, OTYacc)

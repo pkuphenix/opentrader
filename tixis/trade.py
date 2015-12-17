@@ -1,10 +1,10 @@
-from tixis import app
+from opentrader.tixis import app
 from flask import request, render_template, url_for, redirect, abort
 from bson.objectid import ObjectId
-from tixis.model import *
-from tixis.program import Program
-from core.stock import Stock
-from tixis.session import getuser
+from opentrader.tixis.model import *
+from opentrader.tixis.program import Program
+from opentrader.core.stock import Stock
+from opentrader.tixis.session import getuser
 
 class Trade(TixisModel):
     _collection_name = 'trades'
@@ -114,7 +114,7 @@ def trade_add(pid):
         }
         try:
             tr = Trade.new(**new_trade)
-        except ValidationError, e:
+        except ValidationError as e:
             return render_template('trade_add.html', error_show='', error_msg=str(e), prog=prog)
         return redirect(url_for('program_detail', oid=pid))
 
@@ -149,7 +149,7 @@ def trade_edit(pid, tid):
         }
         try:
             trade.update(**new_info)
-        except ValidationError, e:
+        except ValidationError as e:
             return render_template('trade_edit.html', prog=prog, trade=trade, error_show='', error_msg=str(e))
         return redirect(url_for('program_detail', oid=pid))
 

@@ -1,8 +1,8 @@
-from tixis import app
+from opentrader.tixis import app
 from flask import request, render_template, url_for, redirect, abort
 from bson.objectid import ObjectId
-from tixis.model import *
-from tixis.session import getuser
+from opentrader.tixis.model import *
+from opentrader.tixis.session import getuser
 
 class Program(TixisModel):
     _collection_name = 'programs'
@@ -32,7 +32,7 @@ def program_add():
         }
         try:
             prog = Program.new(**new_program)
-        except ValidationError, e:
+        except ValidationError as e:
             return render_template('program_add.html', error_show='', error_msg=str(e))
         return redirect(url_for('program_detail', oid=prog.oid))
 
@@ -51,9 +51,10 @@ def program_detail(oid):
 
 @app.route("/programs/")
 def program_list():
-    user = getuser()
-    if not user:
-        return redirect(url_for('login'))
+    user = "qianli"
+    #user = getuser()
+    #if not user:
+    #    return redirect(url_for('login'))
     progs = Program.find({'user':user})
     return render_template('program_list.html', progs=progs)
 

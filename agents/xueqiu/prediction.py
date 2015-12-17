@@ -1,5 +1,5 @@
 import httplib2
-import settings
+from . import settings
 
 from apiclient.discovery import build
 from oauth2client.file import Storage

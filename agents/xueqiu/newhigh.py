@@ -1,8 +1,8 @@
 #!/usr/bin/python
 import os, sys
 from optparse import OptionParser
-from sync import XueqiuSyncer
-from api import XueqiuAPI, time_parse, current_tick
+from .sync import XueqiuSyncer
+from .api import XueqiuAPI, time_parse, current_tick
 from datetime import datetime,date
 import time
 from core.query import QuerySet
@@ -23,7 +23,7 @@ def convert_newhigh_policy():
             if symbol not in date_dict[entry['date']]:
                 date_dict[entry['date']].append(symbol)
                 # insert into the new collection
-                print entry['time'], entry['date'], symbol
+                print(entry['time'], entry['date'], symbol)
                 db_ot.policy_newhigh_52w.insert({'time':entry['time'], 'date':entry['date'], 'symbol':symbol})
 
 def check_repeat_newhigh_52w(symbol, today=None):
@@ -31,7 +31,7 @@ def check_repeat_newhigh_52w(symbol, today=None):
         today = date.today()
     oldday = TradeCalendar.get_date(today, -10)
     if oldday is None:
-        print 'invalid date'
+        print('invalid date')
         return False # not repeat
     oldday_datetime = datetime(oldday.year, oldday.month, oldday.day)
     today_datetime = datetime(today.year, today.month, today.day)
@@ -67,7 +67,7 @@ def update_newhigh_52w():
             else:
                 result_new_list.append(symbol)
                 db_ot.policy_newhigh_52w.insert({'date':today_datetime, 'time':now, 'symbol':symbol, 'new':1})
-    print "Updated newhigh 52w: existing %d %s, new %d %s, repeat %d %s." % (len(result_exist_list), str(result_exist_list), len(result_new_list), str(result_new_list), len(result_repeat_list), str(result_repeat_list))
+    print("Updated newhigh 52w: existing %d %s, new %d %s, repeat %d %s." % (len(result_exist_list), str(result_exist_list), len(result_new_list), str(result_new_list), len(result_repeat_list), str(result_repeat_list)))
 
 def get_newhigh_52w(today=None):
     if today is None:

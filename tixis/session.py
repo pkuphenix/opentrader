@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from flask import Flask, session, redirect, url_for, escape, request, abort
-from tixis import app
+from opentrader.tixis import app
 import hashlib
-from model import *
+from opentrader.tixis.model import *
 
 def encrypt(data):
     return hashlib.sha224(data).hexdigest()

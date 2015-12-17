@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 import os, sys, csv
 from optparse import OptionParser
-from api import XueqiuAPI, time_parse, current_tick
+from .api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-from sync import XueqiuSyncer
+from .sync import XueqiuSyncer
 
 def gen_time(str_time):
     return datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
@@ -18,12 +18,12 @@ def check_matching_stocks(date=None, yesterday=None):
     to_rtn = []
     for each_stock in greater_than_7:
         # find yesterday's data
-        print each_stock['symbol']
+        print(each_stock['symbol'])
         yest = db.xueqiu_k_day.find_one({'symbol':each_stock['symbol'], 'time':yesterday})
         if not yest:
-            print 'no yesterday data'
+            print('no yesterday data')
             continue
-        print each_stock['volume'] / yest['volume']
+        print(each_stock['volume'] / yest['volume'])
         if (each_stock['volume'] / yest['volume']) <= 1.3:
             each_stock['volume_change'] = each_stock['volume'] / yest['volume']
             info = db.xueqiu_info.find_one({'symbol':each_stock['symbol']})
@@ -35,17 +35,17 @@ def check_matching_stocks(date=None, yesterday=None):
     sorted_list2 = sorted(to_rtn, key=lambda k: k['volume_change'])
     
     with open('1.csv', 'wb') as csvfile:
-        fieldnames = sorted_list1[0].keys()
+        fieldnames = list(sorted_list1[0].keys())
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for each in sorted_list1:
             try:
                 writer.writerow(each)
             except ValueError:
-                print each
+                print(each)
 
     with open('2.csv', 'wb') as csvfile:
-        fieldnames = sorted_list2[0].keys()
+        fieldnames = list(sorted_list2[0].keys())
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for each in sorted_list2:
@@ -107,7 +107,7 @@ def over_night_today():
 
     sorted_list = sorted(to_rtn, key=lambda k: k['percent'], reverse=True)
     with open('3.csv', 'wb') as csvfile:
-        fieldnames = sorted_list[0].keys()
+        fieldnames = list(sorted_list[0].keys())
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for each in sorted_list:

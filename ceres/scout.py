@@ -55,7 +55,7 @@ def test_newhigh55scout():
     ticker = Ticker(begin=gen_time("2014-11-01 00:00:00"), end=gen_time("2015-03-01 00:00:00"))
     s = Newhigh55Scout()
     def ticker_printer(e):
-        print e.source.now.date()
+        print(e.source.now.date())
     ticker.subscribe('day-close', ticker_printer)
     s.bind_ticker(ticker)
 

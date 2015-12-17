@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+    <head>
+        <title>CGM003</title>
+        <script src="jquery-1.11.3.min.js"></script>
+        <style>
+        body{
+            font-size:13px;
+        }
+        td{
+            padding:1px 2px;
+            border-bottom:1px solid gray;
+            text-align:right;
+            vertical-align:bottom;
+            white-space:nowrap;
+        }
+        .red{
+            color:red;
+        }
+        .green{
+            color:green;
+        }
+        #infoTbl{
+            font-size:15px;
+        }
+        </style>
+    </head>
+    <body>
+        <section>
+            <header>
+                间隔:<input type="number" id="refreshTime" min="100" max="5000" value="1000" />毫秒
+                <span id="refresh" style="cursor:pointer; text-decoration:underline; color:blue;"></span>
+                <span id="lastTime"></span>
+                （字体： <span style="cursor:pointer; text-decoration:underline; color:blue;" onclick="$('#infoTbl').css('font-size','15px');">小</span>&nbsp;&nbsp;&nbsp;<span style="cursor:pointer; text-decoration:underline; color:blue;" onclick="$('#infoTbl').css('font-size','20px');">中</span>&nbsp;&nbsp;&nbsp;<span style="cursor:pointer; text-decoration:underline; color:blue;" onclick="$('#infoTbl').css('font-size','25px');">大</span>&nbsp;&nbsp;&nbsp;<span style="cursor:pointer; text-decoration:underline; color:blue;" onclick="$('#infoTbl').css('font-size','55px');">超</span>）
+                <br />
+                <select id="market">
+                    <option value="sh" selected >上海</option>
+                    <option value="sz" >深圳</option>
+                </select>
+                代码：
+                <input type="text" size="7" id="code" value='' />
+                <span style="cursor:pointer; text-decoration:underline; color:blue;" onclick="addStock();">添加</span>
+            </header>
+            <article>
+                <table id="infoTbl">
+                </table>
+            </article>
+        </section>
+        
+        <script>
+            // prototype of Date to add [format] meathod
+            Date.prototype.format = function(format){ 
+                var o = { 
+                    "M+" : this.getMonth()+1, //month 
+                    "d+" : this.getDate(), //day 
+                    "h+" : this.getHours(), //hour 
+                    "m+" : this.getMinutes(), //minute 
+                    "s+" : this.getSeconds(), //second 
+                    "q+" : Math.floor((this.getMonth()+3)/3), //quarter 
+                    "S" : this.getMilliseconds() //millisecond 
+                } 
+
+                if(/(y+)/.test(format)) { 
+                    format = format.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length)); 
+                } 
+
+                for(var k in o) { 
+                    if(new RegExp("("+ k +")").test(format)) { 
+                        format = format.replace(RegExp.$1, RegExp.$1.length==1 ? o[k] : ("00"+ o[k]).substr((""+ o[k]).length)); 
+                    } 
+                } 
+                return format; 
+            };
+            // array remove all
+            Array.prototype.removeAll = function()
+            {
+                while(this.length > 0)
+                    this.pop();
+            }
+            // var init
+            var stockList = ["sh000001","sh600461","sh601186","sh601628","sz399001"],
+            rowHtml = "<tr style='color:{%C%};'><td>{%Nm%}</td><td><b>{%Now%}</b></td><td>{%DiffPrice%}</td><td>{%DiffPer%}</td><td>{%Vol%}</td><td style='color:{%HighC%};'>{%High%}</td><td style='color:{%lowC%};'>{%Low%}</td><td>{%delete%}</td><td>{%More%}</td></tr>",
+            nowT,
+            IntervalObj = null,
+            refreshSpan;
+
+            // 不在申请的js Url后加时间
+            $.ajaxSetup({ 
+                cache: true 
+            });
+
+            // init fun
+            $(function(){
+                refreshSpan = $("#refreshTime").val();
+                $("#refresh").html("开始刷新").click(function(e){
+                    if(null != IntervalObj){
+                        clearInterval(IntervalObj);
+                        IntervalObj = null;
+                        $(this).html("开始刷新");
+                    }else{
+                        doRefresh(); 
+                        IntervalObj = setInterval(doRefresh,refreshSpan);
+                        $(this).html("停止刷新");
+                    }
+                });
+                $("#refresh").click();
+            });
+            function doRefresh(){
+                refreshSpan = $("#refreshTime").val();
+                nowT = new Date().format("yyyyMMddhhmmssSS");
+                $("#infoTbl").html("");
+                for(var i = 0; i < stockList.length; i++){
+                    $.getScript('http://hq.sinajs.cn/a='+nowT+'&list=' + stockList[i],callBack1(stockList[i]));
+                }
+            }
+            function callBack1(nm){
+                var goOn = true;
+                eval("if('undefined' == typeof(hq_str_"+nm+")) goOn = false;");
+                if(goOn){
+                //try{
+                    eval("var tmpStr = hq_str_"+nm+";");
+                    var tmp = tmpStr.split(",");
+                    var rowStr = rowHtml;
+                    rowStr = rowStr.replace(new RegExp("{%Nm%}", 'g'), tmp[0]);
+                    rowStr = rowStr.replace(new RegExp("{%Now%}", 'g'), tmp[3]);
+                    rowStr = rowStr.replace(new RegExp("{%C%}", 'g'), (tmp[3]-tmp[2])>0?"red":((tmp[3]-tmp[2])<0?"green":"gray")); 
+                    rowStr = rowStr.replace(new RegExp("{%DiffPrice%}", 'g'), Math.round((tmp[3]-tmp[2])*100) / 100);
+                    rowStr = rowStr.replace(new RegExp("{%DiffPer%}", 'g'), Math.round((tmp[3]-tmp[2])/tmp[2] * 10000) / 100 +"%");
+                    rowStr = rowStr.replace(new RegExp("{%Vol%}", 'g'), tmp[8]/100);
+                    rowStr = rowStr.replace(new RegExp("{%High%}", 'g'), tmp[4]);
+                    rowStr = rowStr.replace(new RegExp("{%HighC%}", 'g'), (tmp[4]>tmp[3])?"red":((tmp[4]<tmp[3])?"green":"gray"));
+                    rowStr = rowStr.replace(new RegExp("{%Low%}", 'g'), tmp[5]);
+                    rowStr = rowStr.replace(new RegExp("{%LowC%}", 'g'), (tmp[5]>tmp[3])?"red":((tmp[5]<tmp[3])?"green":"gray"));
+                    rowStr = rowStr.replace(new RegExp("{%delete%}", 'g'),"<span title='删除' style='cursor:pointer;' onclick='$(this).parent().parent().remove();delStock(\""+nm+"\")'>删除</span>");
+                    //rowStr = rowStr.replace(new RegExp("{%More%}", 'g'), "<img height='100' src='http://image.sinajs.cn/newchart/min/n/"+nm+".gif' />");  // 图片
+                    rowStr = rowStr.replace(new RegExp("{%More%}", 'g'),"");
+
+                    $("#infoTbl").append(rowStr);
+                    $("#lastTime").html((new Date()).format("hh:mm:ss"));
+                //}catch(e){clearInterval(IntervalObj);}
+                }
+            }
+            function delStock(nm){
+                var delIndex = -1;
+                for(var i = 0; i < stockList.length; i++){
+                    if(stockList[i]==nm){
+                        delIndex = i;
+                        break;
+                    }
+                }
+                if(delIndex != -1)
+                    stockList.splice(delIndex,1);
+            }
+            function addStock(){
+                var delIndex = -1;
+                var cd = $("#market").val() + "" + $("#code").val();
+                for(var i = 0; i < stockList.length; i++){
+                    if(stockList[i]==cd){
+                        delIndex = i;
+                        break;
+                    }
+                }
+                if(delIndex == -1){
+                    stockList.push(cd);
+                    $("#refresh").click().click();
+                    console.log(cd);
+                }else{
+                    alert("已存在");
+                }
+            }
+        </script>
+    </body>
+</html>

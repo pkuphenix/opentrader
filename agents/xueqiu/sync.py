@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 import os, sys, time
 from optparse import OptionParser
-from api import XueqiuAPI, time_parse, current_tick
+from opentrader.agents.xueqiu.api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-from core.ticker import TradeCalendar,RT
-from common.utils import gen_time, standarlize_time, gen_tick
+from opentrader.core.ticker import TradeCalendar,RT
+from opentrader.common.utils import gen_time, standarlize_time, gen_tick
 
 # convert in-place
 def convert_str_to_number(doc, int_keys=[], float_keys=[]):
@@ -60,7 +60,7 @@ class XueqiuSyncer(object):
     # sync price curve of one day (today) to database
     # {"symbol":"SH000001", "prices":[{"volume":227700.0,"current":33.35,"time":"Fri Jan 09 09:30:00 +0800 2015"},...]}
     def sync_xueqiu_price(self, symbols=None):
-        print 'Start syncing xueqiu price...'
+        print('Start syncing xueqiu price...')
         updated = 0
         if symbols is None:
             symbols = [info['symbol'] for info in self.db.xueqiu_info.find({'current':{'$ne':0}})]
@@ -76,15 +76,15 @@ class XueqiuSyncer(object):
             if not stock:
                 self.db.xueqiu_price.insert({'symbol':sym, 'prices':prices, 'date':date})
                 updated += 1
-                print 'stock %d: %s... inserted date %s' % (i, sym, str(date))
+                print('stock %d: %s... inserted date %s' % (i, sym, str(date)))
             else:
-                print 'stock %d: %s... already have it for date %s' % (i, sym, str(date))
+                print('stock %d: %s... already have it for date %s' % (i, sym, str(date)))
             if self.gentle:
                 time.sleep(1)
         return updated
 
     def sync_xueqiu_k_day_pure(self, symbols=None, begin=None, end=None):
-        print 'Start syncing k day pure...'
+        print('Start syncing k day pure...')
         # standarlize begin/end
         begin = standarlize_time(begin)
         end = standarlize_time(end)
@@ -95,7 +95,7 @@ class XueqiuSyncer(object):
             updated = 0
             ks = self.api.stock_k_day(sym, begin=begin, end=end)
             if not ks:
-                print 'stock %d: %s... fetch failure' % (i, sym)
+                print('stock %d: %s... fetch failure' % (i, sym))
                 continue
             real_latest_time = time_parse(ks[-1]['time'])
             for k in ks:
@@ -106,13 +106,13 @@ class XueqiuSyncer(object):
                     self.db.xueqiu_k_day.insert(k)
                     total_updated += 1
                     updated += 1
-            print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(real_latest_time))
+            print('stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(real_latest_time)))
 
     # {"symbol":"SH000001", "time":"Mon Jan 13 00:00:00 +0800 2014", "volume":1.019157E7,"open":14.82,"high":15.35,"close":14.9,"low":14.51,"chg":0.0,"percent":0.0,"turnrate":1.52,"ma5":15.05,"ma10":15.13,"ma20":15.1,"ma30":15.66,"dif":-0.56,"dea":-0.71,"macd":0.3}
     # notice to create index for mongodb: db.xueqiu_k_day.ensureIndex({symbol:1, time:1},{unique:true, dropDups:true})
     # begin, end: support both string or datetime
     def sync_xueqiu_k_day(self, symbols=None, begin=None, end=None, forcecal=False, forcefetch=False, skip=0):
-        print 'Start syncing xueqiu k day...'
+        print('Start syncing xueqiu k day...')
         # standarlize begin/end
         begin = standarlize_time(begin)
         end = standarlize_time(end)
@@ -134,7 +134,7 @@ class XueqiuSyncer(object):
             updated = 0
             stock_with_latest_time = self.db.xueqiu_k_day.find_one({'symbol': sym, 'time':latest_time})
             if stock_with_latest_time and not forcefetch:
-                print 'stock %d: %s... already have it for latest date %s' % (i, sym, str(latest_time))
+                print('stock %d: %s... already have it for latest date %s' % (i, sym, str(latest_time)))
                 # already has latest date for this symbol, no need to query it.
                 if forcecal:
                     # fetch the entry_list from database
@@ -143,7 +143,7 @@ class XueqiuSyncer(object):
                 entry_list = [] # for calculation work
                 ks = self.api.stock_k_day(sym, begin=begin, end=end)
                 if not ks:
-                    print 'stock %d: %s... fetch failure' % (i, sym)
+                    print('stock %d: %s... fetch failure' % (i, sym))
                     continue
                 real_latest_time = time_parse(ks[-1]['time'])
                 for k in ks:
@@ -157,7 +157,7 @@ class XueqiuSyncer(object):
                         entry_list.append(k)
                     else:
                         entry_list.append(entry)
-                print 'stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(real_latest_time))
+                print('stock %d: %s... inserted %d entries with latest time %s' % (i, sym, updated, str(real_latest_time)))
 
             #########################
             # make calculations
@@ -227,7 +227,7 @@ class XueqiuSyncer(object):
                         self.db.xueqiu_k_day.update({'symbol':entry['symbol'], 'time':entry['time']}, {'$set':{'atr20':entry['atr20']}})
                         atr20_updated += 1
 
-                print 'stock %d: %s... %d high20 updated, %d high55 updated, %d atr20 updated, %d low5 updated, %d low10 updated' % (i, sym, high20_updated, high55_updated, atr20_updated, low5_updated, low10_updated)
+                print('stock %d: %s... %d high20 updated, %d high55 updated, %d atr20 updated, %d low5 updated, %d low10 updated' % (i, sym, high20_updated, high55_updated, atr20_updated, low5_updated, low10_updated))
                 
             if self.gentle:
                 time.sleep(1)
@@ -244,7 +244,7 @@ class XueqiuSyncer(object):
      "float_market_capital":"3.778599792E10","disnext_pay_date":"","convert_rate":"","psr":"113.8297"}
     """
     def sync_xueqiu_instant(self, symbols=None):
-        print 'Start syncing xueqiu instant...'
+        print('Start syncing xueqiu instant...')
         updated = 0
         today = datetime.today()
         today = datetime(today.year, today.month, today.day)
@@ -258,7 +258,7 @@ class XueqiuSyncer(object):
             if len(tmp_sym_list) == 100 or i == total_len-1:
                 instant_data = self.api.stock_instant(tmp_sym_list)
                 if not instant_data:
-                    print 'stock %d: %s... fail to query from xueqiu instant for today %s' % (i, tmp_sym_list, str(today))
+                    print('stock %d: %s... fail to query from xueqiu instant for today %s' % (i, tmp_sym_list, str(today)))
                     continue
 		# only remove the old one when the new data is successfully fetched
                 self.db.xueqiu_instant.remove({'symbol':{'$in':tmp_sym_list}, 'date':today})
@@ -274,7 +274,7 @@ class XueqiuSyncer(object):
                      "current","percentage","change","open","high","low","close","last_close","high52week","low52week","eps","pe_ttm","pe_lyr",])
                 self.db.xueqiu_instant.insert(instant_data)
                 updated += len(tmp_sym_list)
-                print '%d stocks: %s... inserted for today %s' % (len(tmp_sym_list), tmp_sym_list[0], str(today))
+                print('%d stocks: %s... inserted for today %s' % (len(tmp_sym_list), tmp_sym_list[0], str(today)))
                 tmp_sym_list = []
                 if self.gentle:
                     time.sleep(0.5)
@@ -291,7 +291,7 @@ def main():
     """
     
     if len(sys.argv) < 2:
-        print USAGE
+        print(USAGE)
         exit(1)
 
     sys_args = sys.argv[1:]

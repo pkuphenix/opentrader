@@ -1,13 +1,15 @@
-from script import *
-from stock import Stock, StockDataNotExist
-from ticker import Ticker
+from .script import *
+from .stock import Stock, StockDataNotExist
+from .ticker import Ticker
 from common.db import db_ot
 from common.utils import Operator,gen_time
 from datetime import datetime
 import time
+import collections
+from functools import reduce
 
 def parse_ref_val(ref, stock):
-    if type(ref) in (str, unicode) and ref.startswith(':'):
+    if type(ref) in (str, str) and ref.startswith(':'):
         (path, key) = (ref[1:].split('::') + [None])[:2]
         path = path.split('|')
         attr = path[0]
@@ -23,7 +25,7 @@ def parse_ref_val(ref, stock):
                     return res[key]
             except KeyError:
                 raise StockDataNotExist('Key does not exist: %s' % key)
-    elif callable(ref):
+    elif isinstance(ref, collections.Callable):
         return ref(stock)
     else:
         return ref
@@ -52,7 +54,7 @@ class QuerySet(object):
             return QuerySet(rtn)
         elif val2 is None:
             # Case 2
-            if type(oper) in (str, unicode) and oper.startswith('$'):
+            if type(oper) in (str, str) and oper.startswith('$'):
                 # this is an operator
                 oper_func = getattr(Operator, oper[1:])
                 rtn = []
@@ -179,7 +181,7 @@ class QuerySet(object):
         for each in qsb.stocks:
             if each.symbol not in stocks:
                 stocks[each.symbol] = each
-        return QuerySet(stocks.values())
+        return QuerySet(list(stocks.values()))
 
     @staticmethod
     def plus(vala, valb):
@@ -257,8 +259,8 @@ class TestQuerySet(object):
         
         ticker = Ticker(begin=gen_time("2015-01-01 00:00:00"), end=gen_time("2015-02-01 00:00:00"))
         def every_day_end(e):
-            print e.source.now
-            print QuerySet.all(ticker=ticker).run_script('filter(":kday|today|-1::percent","$gte",4).filter(":kday::percent","$lte",-9)')
+            print(e.source.now)
+            print(QuerySet.all(ticker=ticker).run_script('filter(":kday|today|-1::percent","$gte",4).filter(":kday::percent","$lte",-9)'))
         ticker.subscribe('day-close', every_day_end)
         ticker.run()
         

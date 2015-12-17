@@ -96,7 +96,7 @@ class Stock(object):
     def kday(self, date='today', bias=0):
         if date == 'today':
             date = self.ticker.now.date()
-        elif type(date) in (str,unicode):
+        elif type(date) in (str,str):
             date = gen_date(date)
         if not TradeCalendar.check_date(date):
             raise KeyError('The date %s is not a valid trading date' % str(date))
@@ -129,7 +129,7 @@ class Stock(object):
     def kdays(self, date='today', bias=0):
         if date == 'today':
             date = self.ticker.now.date()
-        elif type(date) in (str,unicode):
+        elif type(date) in (str,str):
             date = gen_date(date)
         if not TradeCalendar.check_date(date):
             raise KeyError('The date %s is not a valid trading date' % str(date))
@@ -180,7 +180,7 @@ class TestStock(object):
     def test_get_basic_info(self):
         s = Stock('SZ000559')
         assert s is not None
-        assert s.name == u'万向钱潮'
+        assert s.name == '万向钱潮'
         assert s.symbol == 'SZ000559'
 
     def test_get_k_day(self):
@@ -198,13 +198,13 @@ class TestStock(object):
                    end=gen_time('2015-01-02 23:00:00'))
         s1 = Stock('SZ000559', ticker=t)
         def testrunner(e):
-            print '%s: %s' % (e.name, str(e.source.now))
+            print('%s: %s' % (e.name, str(e.source.now)))
 
         def testdayrunner(e):
             try:
-                print s1.instant('time')
-            except StockDataNotExist, e:
-                print e
+                print(s1.instant('time'))
+            except StockDataNotExist as e:
+                print(e)
         
         t.subscribe('ticker-begin', testrunner)
         t.subscribe('day-open', testdayrunner)

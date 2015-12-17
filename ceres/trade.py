@@ -1,26 +1,19 @@
+from datetime import datetime
+DIR_LONG = 1
+DIR_SHORT = -1
 class Trade(object):
-    def __init__(self, symbol):
+    def __init__(self, symbol, direction=DIR_LONG, number=0, price=0, time=None):
         self.symbol = symbol
-        self.status = 0
+        self.direction = direction
+        self.number = number
+        self.price = price
+        self.time = time or datetime.now()
 
-    def buy(self, time, price, risk):
-        self.buy_time = time
-        self.buy_price = price
-        self.initial_risk = risk
-        self.status = 1
-
-    def sell(self, time, price):
-        self.sell_time = time
-        self.sell_price = price
-        self.profit_percent = (self.sell_price - self.buy_price)/self.buy_price*100
-        self.profit_rtimes = (self.sell_price - self.buy_price)/self.initial_risk
-        self.hold_days = (self.sell_time - self.buy_time).days
-        self.status = 2
-
-
-class TradeTracker(object):
-    def __init__(self):
-        self.trades = []
-
-    def append_trade(self, trade):
-        self.trades.append(trade)
+    def apply(self, account):
+        if self.direction == DIR_LONG:
+            account.update_position(self.symbol, self.number, self.time)
+            account.update_cash(self.number * -1 * self.price, self.time)
+        else:
+            account.update_position(self.symbol, self.number * -1, self.time)
+            account.update_cash(self.number * self.price, self.time)
+        return True

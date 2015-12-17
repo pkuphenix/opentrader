@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 import os, sys, csv
 from optparse import OptionParser
-from api import XueqiuAPI, time_parse, current_tick
+from .api import XueqiuAPI, time_parse, current_tick
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-from prediction import *
+from .prediction import *
 
 def compute_delta_percent(dst, src, round_num=3):
     return round((dst/src-1)*100, round_num)
@@ -79,8 +79,8 @@ class I419(object):
             data.append(dates[src]['turnrate'])
             src += 1
         pred = TrainedModel("154235034870", "i41901")
-        print pred.predict(data)
-        print (real_result, data)
+        print(pred.predict(data))
+        print((real_result, data))
         
         
 

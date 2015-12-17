@@ -1,13 +1,13 @@
 from flask import Flask, request, render_template, url_for, redirect
-from agents.xueqiu.sync import XueqiuSyncer
-from core.ticker import RT
+from opentrader.agents.xueqiu.sync import XueqiuSyncer
+from opentrader.core.ticker import RT
 
 app = Flask(__name__)
-import program
-import trade
-import landscape
-import utils
-import session
+import opentrader.tixis.program
+import opentrader.tixis.trade
+import opentrader.tixis.landscape
+import opentrader.tixis.utils
+import opentrader.tixis.session
 
 @app.route("/")
 def index():
