@@ -47,7 +47,7 @@ class THSAPI(object):
     #第一位：0 日k线，1周k线，2月k线，3－5分钟线，4 － 半小时线，5-小时线，6-分钟线，7？？
     #（对于last.js接口，周、月k线为全部数据，其他均为最后140项数据，另外，只有日周月k数据是全的，其他均不全。数据仅有［开收高低量额幅］其他所有指标均为前端计算得来）
     #第二位：0 不复权，1前复权（默认），2后复权
-    def _get_market_data(self, symbol, time_or_line='line', query="last.js", flag="00"):
+    def _get_market_data(self, symbol, time_or_line='line', query="last.js", flag="01"):
         sym = symbol_convert(symbol)
         if not sym:
             raise InvalidSymbol('invalid symbol: %s' % (symbol))
@@ -63,9 +63,10 @@ class THSAPI(object):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Trident/7.0; rv:11.0) like Gecko',
             'X-Requested-With': 'XMLHttpRequest',
         }
-        print(url)
         r = requests.get(url, headers=headers)
-        return r.text
+        txt = r.text
+        i = txt.find('\"data\":\"')
+        return txt[i+8:-3]
 
     # get the latest stock analyzing data by iwencai
     # find {'data':{'data':{'result':{'event':..., buy':..., 'sell':..., 'zxst':...}}}}
@@ -105,13 +106,17 @@ class THSAPI(object):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Trident/7.0; rv:11.0) like Gecko',
             'X-Requested-With': 'XMLHttpRequest',
         }
-        print(url)
+        #print(url)
         r = requests.get(url, headers=headers)
         # look for: "token":"3c056e348add1a00a81b17e2ec4280b4"
         lines = r.text.split('\n')
         for line in lines:
             if line.find("allResult") > 0:
-                return json.loads(line[16:-1])
+                # eat up final characters that is not '}'
+                result = line[16:-1]
+                while result[-1] != '}':
+                    result = result[:-1]
+                return json.loads(result)
         return None
 
 def test_ths():
