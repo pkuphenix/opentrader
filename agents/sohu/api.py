@@ -2,7 +2,7 @@ import sys
 sys.path.append("../../")
 import time, urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, json, http.cookiejar, sys
 from datetime import datetime
-from common.utils import gen_tick
+from opentrader.common.utils import gen_tick
 import random
 PREFIX = 'http://q.stock.sohu.com/'
 

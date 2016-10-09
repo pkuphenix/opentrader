@@ -5,7 +5,7 @@ from matplotlib.dates import MONDAY
 from matplotlib.dates import MonthLocator, WeekdayLocator, DateFormatter
 
 # lines: [{"value":[...], "label":"..."}]
-def draw_line(title, dates, lines):
+def draw_line(title, dates, lines, width=6, height=4):
     # every monday
     mondays = WeekdayLocator(MONDAY)
 
@@ -27,4 +27,5 @@ def draw_line(title, dates, lines):
     #ax.xaxis.grid(True, 'minor')
     ax.grid(True)
     fig.autofmt_xdate()
+    fig.set_size_inches(width, height)
     plt.show()

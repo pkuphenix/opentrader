@@ -5,11 +5,11 @@ from .sync import XueqiuSyncer
 from .api import XueqiuAPI, time_parse, current_tick
 from datetime import datetime,date
 import time
-from core.query import QuerySet
-from common.db import db_ot
+from opentrader.core.query import QuerySet
+from opentrader.common.db import db_ot
 import pymongo
-from core.ticker import TradeCalendar
-from common.utils import gen_time
+from opentrader.core.ticker import TradeCalendar
+from opentrader.common.utils import gen_time
 
 # db.policy_newhigh_52w.ensureIndex({date:1, time:1})
 

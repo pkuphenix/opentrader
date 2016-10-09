@@ -5,9 +5,9 @@ from opentrader.agents.xueqiu.sync import XueqiuSyncer
 from opentrader.agents.xueqiu.api import XueqiuAPI, time_parse, current_tick
 from datetime import datetime, timedelta
 import time
-from core.query import QuerySet
-from core.ticker import RT
-from common.db import db_ot
+from opentrader.core.query import QuerySet
+from opentrader.core.ticker import RT
+from opentrader.common.db import db_ot
 import pymongo
 from opentrader.agents.xueqiu.newhigh import update_newhigh_52w
 

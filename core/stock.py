@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from common.db import db_ot
+from opentrader.common.db import db_ot
 import pymongo
 from datetime import datetime
-from core.ticker import Ticker, RT, TradeCalendar
-from common.utils import gen_time, gen_date
+from opentrader.core.ticker import Ticker, RT, TradeCalendar
+from opentrader.common.utils import gen_time, gen_date
 
 class StockDataNotExist(Exception):
     pass
