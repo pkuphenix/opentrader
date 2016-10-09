@@ -1,8 +1,8 @@
 from .script import *
 from .stock import Stock, StockDataNotExist
 from .ticker import Ticker
-from common.db import db_ot
-from common.utils import Operator,gen_time
+from opentrader.common.db import db_ot
+from opentrader.common.utils import Operator,gen_time
 from datetime import datetime
 import time
 import collections

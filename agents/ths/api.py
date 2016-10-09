@@ -1,7 +1,7 @@
 import time, requests, json
 from datetime import datetime
 from opentrader.common.utils import gen_tick
-from common.exceptions import InvalidSymbol
+from opentrader.common.exceptions import InvalidSymbol
 PREFIX1 = 'http://www.iwencai.com'
 PREFIX2 = 'http://d.10jqka.com.cn/v2'
 
